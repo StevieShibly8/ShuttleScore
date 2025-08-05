@@ -1,75 +1,68 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
-
-import { HelloWave } from '@/components/HelloWave';
-import ParallaxScrollView from '@/components/ParallaxScrollView';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
+import { ScrollView, View, Text } from 'react-native';
 
 export default function StatsScreen() {
-    return (
-        <ParallaxScrollView
-            headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-            headerImage={
-                <Image
-                    source={require('@/assets/images/partial-react-logo.png')}
-                    style={styles.reactLogo}
-                />
-            }>
-            <ThemedView style={styles.titleContainer}>
-                <ThemedText type="title">Stats Screen</ThemedText>
-                <HelloWave />
-            </ThemedView>
-            <ThemedView style={styles.stepContainer}>
-                <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-                <ThemedText>
-                    Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-                    Press{' '}
-                    <ThemedText type="defaultSemiBold">
-                        {Platform.select({
-                            ios: 'cmd + d',
-                            android: 'cmd + m',
-                            web: 'F12',
-                        })}
-                    </ThemedText>{' '}
-                    to open developer tools.
-                </ThemedText>
-            </ThemedView>
-            <ThemedView style={styles.stepContainer}>
-                <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-                <ThemedText>
-                    {`Tap the Explore tab to learn more about what's included in this starter app.`}
-                </ThemedText>
-            </ThemedView>
-            <ThemedView style={styles.stepContainer}>
-                <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-                <ThemedText>
-                    {`When you're ready, run `}
-                    <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-                    <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-                    <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-                    <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-                </ThemedText>
-            </ThemedView>
-        </ParallaxScrollView>
-    );
+  const playerStats = [
+    { name: 'Zubair Shibly', wins: 15, losses: 8, winRate: 65 },
+    { name: 'Nilin Reza', wins: 12, losses: 6, winRate: 67 },
+    { name: 'Junaid Wali', wins: 14, losses: 10, winRate: 58 },
+    { name: 'Tawsif Hasan', wins: 9, losses: 7, winRate: 56 },
+  ];
+
+  const overallStats = {
+    totalGames: 47,
+    totalSessions: 8,
+    averageGamesPerSession: 5.9,
+    longestSession: '2h 45m'
+  };
+
+  return (
+    <ScrollView className="flex-1 bg-app-black">
+      <View className="p-5 pt-20">
+        <View className="items-center mb-8">
+          <Text className="text-3xl text-white font-800 text-center tracking-tight">Statistics</Text>
+        </View>
+
+        <View className="mb-8">
+          <Text className="text-white text-lg font-bold mb-4">Overall Stats</Text>
+          <View className="space-y-3">
+            <View className="flex-row justify-between p-4 rounded-xl-plus bg-app-card border border-app-card-border">
+              <Text className="text-app-text-secondary">Total Games</Text>
+              <Text className="text-white font-semibold">{overallStats.totalGames}</Text>
+            </View>
+            <View className="flex-row justify-between p-4 rounded-xl-plus bg-app-card border border-app-card-border">
+              <Text className="text-app-text-secondary">Total Sessions</Text>
+              <Text className="text-white font-semibold">{overallStats.totalSessions}</Text>
+            </View>
+            <View className="flex-row justify-between p-4 rounded-xl-plus bg-app-card border border-app-card-border">
+              <Text className="text-app-text-secondary">Avg Games/Session</Text>
+              <Text className="text-white font-semibold">{overallStats.averageGamesPerSession}</Text>
+            </View>
+            <View className="flex-row justify-between p-4 rounded-xl-plus bg-app-card border border-app-card-border">
+              <Text className="text-app-text-secondary">Longest Session</Text>
+              <Text className="text-white font-semibold">{overallStats.longestSession}</Text>
+            </View>
+          </View>
+        </View>
+
+        <View className="space-y-3">
+          <Text className="text-white text-lg font-bold mb-2">Player Performance</Text>
+          {playerStats.map((player, index) => (
+            <View key={player.name} className="p-4 rounded-xl-plus bg-app-card border border-app-card-border">
+              <View className="flex-row justify-between items-center mb-2">
+                <Text className="text-white font-semibold">{player.name}</Text>
+                <View className="bg-app-primary px-2 py-1 rounded-full">
+                  <Text className="text-white text-xs font-semibold">#{index + 1}</Text>
+                </View>
+              </View>
+              <View className="flex-row justify-between items-center">
+                <Text className="text-app-text-muted text-sm">{player.wins}W - {player.losses}L</Text>
+                <Text className="text-app-success text-sm font-semibold">{player.winRate}% win rate</Text>
+              </View>
+            </View>
+          ))}
+        </View>
+      </View>
+    </ScrollView>
+  );
 }
 
-const styles = StyleSheet.create({
-    titleContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 8,
-    },
-    stepContainer: {
-        gap: 8,
-        marginBottom: 8,
-    },
-    reactLogo: {
-        height: 178,
-        width: 290,
-        bottom: 0,
-        left: 0,
-        position: 'absolute',
-    },
-});

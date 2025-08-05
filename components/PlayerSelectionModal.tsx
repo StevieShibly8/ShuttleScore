@@ -1,7 +1,5 @@
 import { useState } from 'react';
-import { StyleSheet, TouchableOpacity, Modal, ScrollView } from 'react-native';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
+import { TouchableOpacity, Modal, ScrollView, View, Text } from 'react-native';
 import { players, Player } from '@/data/players';
 
 interface PlayerSelectionModalProps {
@@ -40,173 +38,70 @@ export default function PlayerSelectionModal({ visible, onClose, onStartSession 
       onRequestClose={onClose}
       presentationStyle="overFullScreen"
     >
-      <ThemedView style={styles.overlay}>
-        <ThemedView style={styles.modalContent}>
-          <ThemedView style={styles.handle} />
-          <ThemedText type="title" style={styles.modalTitle}>Select Players</ThemedText>
+      <View className="flex-1 bg-app-overlay justify-end">
+        <View className="rounded-t-3xl pt-3 px-5 pb-10 max-h-[85%] bg-app-modal-bg">
+          <View className="w-10 h-1 bg-app-text-muted rounded-full self-center mb-5" />
+          <Text className="text-center mb-6 text-2xl font-semibold text-app-text-primary">Select Players</Text>
           
-          <ScrollView style={styles.playerList} showsVerticalScrollIndicator={false}>
+          <ScrollView className="mb-6 space-y-1" showsVerticalScrollIndicator={false}>
             {players.map((player) => (
               <TouchableOpacity
                 key={player.id}
-                style={[
-                  styles.playerItem,
-                  selectedPlayerIds.includes(player.id) && styles.playerItemSelected
-                ]}
+                className={`flex-row justify-between items-center py-5 px-1 border-b border-app-modal-border ${
+                  selectedPlayerIds.includes(player.id) ? 'bg-app-selected' : ''
+                }`}
                 onPress={() => togglePlayer(player.id)}
               >
-                <ThemedView style={styles.playerInfo}>
-                  <ThemedText type="defaultSemiBold" style={styles.playerName}>{player.name}</ThemedText>
-                  <ThemedText style={styles.playerStats}>{player.wins}W - {player.losses}L</ThemedText>
-                </ThemedView>
-                <ThemedView style={[
-                  styles.checkbox, 
-                  selectedPlayerIds.includes(player.id) && styles.checkboxSelected
-                ]}>
+                <View className="flex-1 gap-0.5">
+                  <Text className="text-base font-medium text-app-text-primary">{player.name}</Text>
+                  <Text className="text-sm text-app-text-muted">{player.wins}W - {player.losses}L</Text>
+                </View>
+                <View className={`w-6 h-6 rounded-full border-2 items-center justify-center ${
+                  selectedPlayerIds.includes(player.id) 
+                    ? 'bg-app-selected-border border-app-selected-border' 
+                    : 'border-app-text-muted'
+                }`}>
                   {selectedPlayerIds.includes(player.id) && (
-                    <ThemedText style={styles.checkmark}>✓</ThemedText>
+                    <Text className="text-app-white text-sm font-bold">✓</Text>
                   )}
-                </ThemedView>
+                </View>
               </TouchableOpacity>
             ))}
           </ScrollView>
 
-          <ThemedText style={styles.selectionInfo}>
+          <Text className="text-center mb-6 text-sm text-app-text-muted">
             {selectedPlayerIds.length} players selected (minimum 2 required)
-          </ThemedText>
+          </Text>
 
-          <ThemedView style={styles.buttonContainer}>
-            <TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
-              <ThemedText style={styles.cancelButtonText}>Cancel</ThemedText>
+          <View className="flex-row gap-4">
+            <TouchableOpacity 
+              className="flex-1 py-4 rounded-xl border-2 border-app-primary items-center"
+              onPress={handleCancel}
+            >
+              <Text className="text-app-primary text-base font-semibold">Cancel</Text>
             </TouchableOpacity>
             
             <TouchableOpacity 
-              style={[
-                styles.startButton,
-                selectedPlayerIds.length < 2 && styles.startButtonDisabled
-              ]}
+              className={`flex-1 py-4 rounded-xl items-center ${
+                selectedPlayerIds.length < 2 
+                  ? 'bg-app-disabled' 
+                  : 'bg-app-primary'
+              }`}
               onPress={handleStartSession}
               disabled={selectedPlayerIds.length < 2}
             >
-              <ThemedText style={styles.startButtonText}>Start Session</ThemedText>
+              <Text className={`text-base font-semibold ${
+                selectedPlayerIds.length < 2 
+                  ? 'text-app-text-disabled' 
+                  : 'text-app-white'
+              }`}>
+                Start Session
+              </Text>
             </TouchableOpacity>
-          </ThemedView>
-        </ThemedView>
-      </ThemedView>
+          </View>
+        </View>
+      </View>
     </Modal>
   );
 }
 
-const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingTop: 12,
-    paddingHorizontal: 20,
-    paddingBottom: 40,
-    maxHeight: '85%',
-  },
-  handle: {
-    width: 40,
-    height: 4,
-    backgroundColor: '#ccc',
-    borderRadius: 2,
-    alignSelf: 'center',
-    marginBottom: 20,
-  },
-  modalTitle: {
-    textAlign: 'center',
-    marginBottom: 24,
-    fontSize: 24,
-  },
-  playerList: {
-    marginBottom: 24,
-  },
-  playerItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 20,
-    paddingHorizontal: 4,
-    marginBottom: 1,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0, 0, 0, 0.1)',
-  },
-  playerItemSelected: {
-    backgroundColor: 'rgba(0, 122, 255, 0.05)',
-  },
-  playerInfo: {
-    flex: 1,
-    gap: 2,
-  },
-  playerName: {
-    fontSize: 17,
-  },
-  playerStats: {
-    fontSize: 14,
-    opacity: 0.6,
-  },
-  checkbox: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    borderWidth: 1.5,
-    borderColor: '#ccc',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  checkboxSelected: {
-    backgroundColor: '#007AFF',
-    borderColor: '#007AFF',
-  },
-  checkmark: {
-    color: 'white',
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
-  selectionInfo: {
-    textAlign: 'center',
-    marginBottom: 24,
-    fontSize: 15,
-    opacity: 0.7,
-  },
-  buttonContainer: {
-    flexDirection: 'row',
-    gap: 16,
-  },
-  cancelButton: {
-    flex: 1,
-    paddingVertical: 16,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: '#007AFF',
-    alignItems: 'center',
-  },
-  cancelButtonText: {
-    color: '#007AFF',
-    fontSize: 17,
-    fontWeight: '600',
-  },
-  startButton: {
-    flex: 1,
-    paddingVertical: 16,
-    borderRadius: 12,
-    backgroundColor: '#007AFF',
-    alignItems: 'center',
-  },
-  startButtonDisabled: {
-    backgroundColor: '#ccc',
-    borderWidth: 2,
-    borderColor: '#ccc',
-  },
-  startButtonText: {
-    color: 'white',
-    fontSize: 17,
-    fontWeight: '600',
-  },
-});

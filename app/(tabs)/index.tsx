@@ -1,10 +1,9 @@
 import { useState } from 'react';
-import { StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { TouchableOpacity, ScrollView, View, Text } from 'react-native';
 import { router } from 'expo-router';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
 import PlayerSelectionModal from '@/components/PlayerSelectionModal';
 import { players, Player } from '@/data/players';
+
 
 export default function HomeScreen() {
   const [modalVisible, setModalVisible] = useState(false);
@@ -22,31 +21,29 @@ export default function HomeScreen() {
   const topPlayers = players.slice().sort((a, b) => b.wins - a.wins).slice(0, 3);
 
   return (
-    <ScrollView style={styles.container}>
-      <ThemedView style={styles.content}>
-        <ThemedView style={styles.titleContainer}>
-          <ThemedText type="title" style={styles.mainTitle}>Shuttle Score</ThemedText>
-        </ThemedView>
+    <ScrollView className="flex-1 bg-app-black">
+      <View className="p-5 pt-20">
+        <View className="items-center mb-12 mt-5">
+          <Text className="text-5xl text-white font-800 text-center tracking-tight">Shuttle Score</Text>
+        </View>
 
         <TouchableOpacity 
-          style={styles.startButton}
+          className="bg-app-primary py-4 rounded-xl-plus items-center mb-10 shadow-lg"
           onPress={() => setModalVisible(true)}
         >
-          <ThemedText type="defaultSemiBold" style={styles.startButtonText}>
-            Start Session
-          </ThemedText>
+          <Text className="text-white text-lg font-bold">Start New Session</Text>
         </TouchableOpacity>
 
-        <ThemedView style={styles.topPlayersContainer}>
-          <ThemedText type="subtitle" style={styles.sectionTitle}>Top Players</ThemedText>
+        <View className="space-y-3">
+          <Text className="text-white text-xl font-bold mb-2">Top Players</Text>
           {topPlayers.map((player) => (
-            <ThemedView key={player.id} style={styles.playerRow}>
-              <ThemedText type="defaultSemiBold">{player.name}</ThemedText>
-              <ThemedText>{player.wins}W - {player.losses}L</ThemedText>
-            </ThemedView>
+            <View key={player.id} className="flex-row justify-between items-center py-3 px-4 rounded-xl bg-app-card border border-app-card-border">
+              <Text className="text-white font-semibold">{player.name}</Text>
+              <Text className="text-app-text-muted text-sm">{player.wins}W - {player.losses}L</Text>
+            </View>
           ))}
-        </ThemedView>
-      </ThemedView>
+        </View>
+      </View>
 
       <PlayerSelectionModal
         visible={modalVisible}
@@ -57,50 +54,3 @@ export default function HomeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  content: {
-    flex: 1,
-    padding: 20,
-    paddingTop: 80,
-  },
-  titleContainer: {
-    alignItems: 'center',
-    marginBottom: 50,
-    marginTop: 20,
-  },
-  mainTitle: {
-    fontSize: 48,
-    textAlign: 'center',
-    lineHeight: 56,
-  },
-  startButton: {
-    backgroundColor: '#007AFF',
-    paddingVertical: 16,
-    paddingHorizontal: 32,
-    borderRadius: 12,
-    alignItems: 'center',
-    marginBottom: 40,
-  },
-  startButtonText: {
-    color: 'white',
-    fontSize: 18,
-  },
-  topPlayersContainer: {
-    gap: 12,
-  },
-  sectionTitle: {
-    marginBottom: 16,
-  },
-  playerRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    backgroundColor: 'rgba(0, 122, 255, 0.1)',
-  },
-});
