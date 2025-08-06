@@ -1,4 +1,4 @@
-import { Player, players } from "@/data/players";
+import { Player, players } from "@/data/playerData";
 import { useState } from "react";
 import { Modal, ScrollView, Text, TouchableOpacity, View } from "react-native";
 

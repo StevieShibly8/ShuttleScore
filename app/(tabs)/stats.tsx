@@ -17,7 +17,7 @@ export default function StatsScreen() {
 
   return (
     <ScrollView className="flex-1 bg-app-black">
-      <View className="p-5 pt-20">
+      <View className="p-5">
         <View className="items-center mb-8">
           <Text className="text-3xl text-white font-800 text-center tracking-tight">
             Statistics
