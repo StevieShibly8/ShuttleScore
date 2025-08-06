@@ -5,6 +5,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/Card";
+import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 
@@ -37,10 +38,11 @@ export default function SessionScreen() {
   return (
     <ScrollView className="flex-1 bg-app-black">
       <View className="p-5">
-        <View className="items-center mb-8">
-          <Text className="text-3xl text-white font-800 text-center tracking-tight">
-            Session
-          </Text>
+        <View className="flex-row items-center mb-8">
+          <TouchableOpacity onPress={() => router.back()} className="mr-3 p-1">
+            <Ionicons name="arrow-back" size={28} color="#fff" />
+          </TouchableOpacity>
+          <Text className="text-3xl text-white font-800 flex-1">Session</Text>
         </View>
 
         <TouchableOpacity
