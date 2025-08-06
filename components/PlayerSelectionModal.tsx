@@ -1,6 +1,13 @@
-import { Player, players } from "@/data/players";
+import { Player, players } from "@/data/playerData";
 import { useState } from "react";
-import { Modal, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import {
+  Modal,
+  ScrollView,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 interface PlayerSelectionModalProps {
   visible: boolean;
@@ -14,6 +21,8 @@ export default function PlayerSelectionModal({
   onStartSession,
 }: PlayerSelectionModalProps) {
   const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>([]);
+  const [showAddPlayer, setShowAddPlayer] = useState(false);
+  const [newPlayerName, setNewPlayerName] = useState("");
 
   const togglePlayer = (playerId: string) => {
     setSelectedPlayerIds((prev) =>
@@ -21,6 +30,20 @@ export default function PlayerSelectionModal({
         ? prev.filter((id) => id !== playerId)
         : [...prev, playerId]
     );
+  };
+
+  const handleAddPlayer = () => {
+    if (!newPlayerName.trim()) return;
+    const newPlayer: Player = {
+      id: (players.length + 1).toString(),
+      name: newPlayerName.trim(),
+      wins: 0,
+      losses: 0,
+    };
+    players.push(newPlayer);
+    setSelectedPlayerIds((prev) => [...prev, newPlayer.id]);
+    setNewPlayerName("");
+    setShowAddPlayer(false);
   };
 
   const handleStartSession = () => {
@@ -84,6 +107,41 @@ export default function PlayerSelectionModal({
                 </View>
               </TouchableOpacity>
             ))}
+            {showAddPlayer ? (
+              <View className="flex-row items-center py-5 mt-2 gap-2">
+                <TextInput
+                  className="flex-1 border border-app-primary rounded-lg px-3 py-2 text-base text-app-text-primary bg-app-modal-bg"
+                  placeholder="Enter player name"
+                  value={newPlayerName}
+                  onChangeText={setNewPlayerName}
+                  autoFocus
+                />
+                <TouchableOpacity
+                  className="px-4 py-2 bg-app-primary rounded-lg"
+                  onPress={handleAddPlayer}
+                >
+                  <Text className="text-app-white font-semibold">Add</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  className="px-2 py-2 ml-1"
+                  onPress={() => {
+                    setShowAddPlayer(false);
+                    setNewPlayerName("");
+                  }}
+                >
+                  <Text className="text-app-primary font-semibold">Cancel</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <TouchableOpacity
+                className="flex-row items-center justify-center py-5 mt-2 rounded-lg border border-dashed border-app-primary"
+                onPress={() => setShowAddPlayer(true)}
+              >
+                <Text className="text-app-primary text-base font-semibold">
+                  + Add New Player
+                </Text>
+              </TouchableOpacity>
+            )}
           </ScrollView>
 
           <Text className="text-center mb-6 text-sm text-app-text-muted">
