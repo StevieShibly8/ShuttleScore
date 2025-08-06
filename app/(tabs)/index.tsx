@@ -3,6 +3,7 @@ import { TouchableOpacity, ScrollView, View, Text } from 'react-native';
 import { router } from 'expo-router';
 import PlayerSelectionModal from '@/components/PlayerSelectionModal';
 import { players, Player } from '@/data/players';
+import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/Card';
 
 
 export default function HomeScreen() {
@@ -33,6 +34,19 @@ export default function HomeScreen() {
         >
           <Text className="text-white text-lg font-bold">Start New Session</Text>
         </TouchableOpacity>
+
+        {/* Example Custom Card */}
+        <Card variant="default" className="mb-6">
+          <CardHeader>
+            <CardTitle>Custom Card Component</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Text className="text-app-text-secondary">Simple, lightweight card using your existing CSS variables</Text>
+          </CardContent>
+          <CardFooter>
+            <Text className="text-app-text-muted text-xs">Built with NativeWind</Text>
+          </CardFooter>
+        </Card>
 
         <View className="space-y-3">
           <Text className="text-white text-xl font-bold mb-2">Top Players</Text>
