@@ -1,4 +1,4 @@
-import { Player, players } from "@/data/playerData";
+import { Player } from "@/data/playerData";
 import { useState } from "react";
 import {
   Modal,
@@ -8,6 +8,8 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+
+import { usePlayerStore } from "@/stores/playerStore";
 
 interface PlayerSelectionModalProps {
   visible: boolean;
@@ -20,6 +22,8 @@ export default function PlayerSelectionModal({
   onClose,
   onStartSession,
 }: PlayerSelectionModalProps) {
+  const players = usePlayerStore((state) => state.players);
+  const addPlayer = usePlayerStore((state) => state.addPlayer);
   const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>([]);
   const [showAddPlayer, setShowAddPlayer] = useState(false);
   const [newPlayerName, setNewPlayerName] = useState("");
@@ -34,14 +38,17 @@ export default function PlayerSelectionModal({
 
   const handleAddPlayer = () => {
     if (!newPlayerName.trim()) return;
-    const newPlayer: Player = {
-      id: (players.length + 1).toString(),
-      name: newPlayerName.trim(),
-      wins: 0,
-      losses: 0,
-    };
-    players.push(newPlayer);
-    setSelectedPlayerIds((prev) => [...prev, newPlayer.id]);
+
+    addPlayer(newPlayerName.trim());
+
+    // Get the newly added player and auto-select it
+    setTimeout(() => {
+      const updatedPlayers = usePlayerStore.getState().players;
+      const newPlayer = updatedPlayers[updatedPlayers.length - 1]; // Last added player
+      console.log("Added player with ID:", newPlayer.id);
+      setSelectedPlayerIds((prev) => [...prev, newPlayer.id]);
+    }, 100);
+
     setNewPlayerName("");
     setShowAddPlayer(false);
   };
