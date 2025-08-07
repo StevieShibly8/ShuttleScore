@@ -1,7 +1,5 @@
-import { Duo } from "./duoData";
-
 interface Team {
-  duo: Duo;
+  duoId: string;
   score: number;
 }
 
@@ -9,6 +7,6 @@ export interface Game {
   id: string;
   teamA: Team;
   teamB: Team;
-  winner: Team | null;
+  winner: "A" | "B" | null; // Use "A" or "B" to indicate the winning team
   isGameActive: boolean;
 }

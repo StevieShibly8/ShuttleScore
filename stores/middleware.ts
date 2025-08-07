@@ -23,5 +23,3 @@ export function withAsyncStoragePersist<T>(
     },
   });
 }
-
-export default withAsyncStoragePersist;
