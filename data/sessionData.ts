@@ -1,9 +1,9 @@
 import { Game } from "./gameData";
-import { Player } from "./playerData";
 
 export interface Session {
   id: string;
-  players: Player[];
+  playerIds: string[];
+  date: string;
   pastGames: Game[];
   currentGame: Game | null;
   gamesPlayedPerPlayer: Record<string, number>;

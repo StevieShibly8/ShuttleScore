@@ -1,9 +1,6 @@
-import { Player } from "./playerData";
-
 export interface Duo {
   id: string;
-  players: Player[];
+  playerIds: string[];
   wins: number;
   losses: number;
-  rank?: number;
 }

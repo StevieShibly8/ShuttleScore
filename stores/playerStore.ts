@@ -1,31 +1,32 @@
-import { players as initialPlayers, Player } from "@/data/playerData";
+import { Player } from "@/data/playerData";
+import uuid from "react-native-uuid";
 import { create, StateCreator } from "zustand";
-import withAsyncStoragePersist from "./middleware";
+import { withAsyncStoragePersist } from "./middleware";
 
 interface PlayerStore {
   players: Player[];
   addPlayer: (name: string) => void;
-  updatePlayerStats: (id: string, wins: number, losses: number) => void;
+  updatePlayer: (id: string, player: Partial<Player>) => void;
   removePlayer: (id: string) => void;
 }
 
 const playerStoreCreator: StateCreator<PlayerStore> = (set, get) => ({
-  players: initialPlayers,
+  players: [],
   addPlayer: (name: string) => {
-    // Generate a unique 4-digit string id
-    const id = Math.floor(1000 + Math.random() * 9000).toString();
     const newPlayer: Player = {
-      id,
+      id: uuid.v4() as string,
       name,
       wins: 0,
       losses: 0,
+      rank: 1,
+      rating: 0,
     };
     set((state: PlayerStore) => ({ players: [...state.players, newPlayer] }));
   },
-  updatePlayerStats: (id: string, wins: number, losses: number) =>
+  updatePlayer: (id: string, player: Partial<Player>) =>
     set((state: PlayerStore) => ({
       players: state.players.map((p: Player) =>
-        p.id === id ? { ...p, wins, losses } : p
+        p.id === id ? { ...p, ...player } : p
       ),
     })),
   removePlayer: (id: string) =>

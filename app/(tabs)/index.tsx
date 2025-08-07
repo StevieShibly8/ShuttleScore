@@ -6,13 +6,15 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/Card";
-import { Player, players } from "@/data/playerData";
+import { Player } from "@/data/playerData";
+import { usePlayerStore } from "@/stores/playerStore";
 import { router } from "expo-router";
 import { useState } from "react";
 import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 
 export default function HomeScreen() {
   const [modalVisible, setModalVisible] = useState(false);
+  const players = usePlayerStore((state) => state.players);
 
   const handleStartSession = (selectedPlayers: Player[]) => {
     setModalVisible(false);
@@ -26,7 +28,7 @@ export default function HomeScreen() {
     });
   };
 
-  const topPlayers = players
+  const topPlayers = (players || [])
     .slice()
     .sort((a, b) => b.wins - a.wins)
     .slice(0, 3);
