@@ -4,7 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { Text, TouchableOpacity, View } from "react-native";
 import * as ScreenOrientation from "expo-screen-orientation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 export default function GameScreen() {
   useEffect(() => {
@@ -14,6 +14,39 @@ export default function GameScreen() {
       ScreenOrientation.unlockAsync();
     };
   }, []);
+
+  // Game state management
+  const [leftTeam, setLeftTeam] = useState({ 
+    name: "Team A", 
+    score: 21, 
+    players: { top: "Alice", bottom: "Charlie" } 
+  });
+  const [rightTeam, setRightTeam] = useState({ 
+    name: "Team B", 
+    score: 18, 
+    players: { top: "Bob", bottom: "Dana" } 
+  });
+
+  // Swap functions
+  const swapLeftTeamPlayers = () => {
+    setLeftTeam(prev => ({
+      ...prev,
+      players: { top: prev.players.bottom, bottom: prev.players.top }
+    }));
+  };
+
+  const swapRightTeamPlayers = () => {
+    setRightTeam(prev => ({
+      ...prev,
+      players: { top: prev.players.bottom, bottom: prev.players.top }
+    }));
+  };
+
+  const swapTeams = () => {
+    const tempLeft = leftTeam;
+    setLeftTeam(rightTeam);
+    setRightTeam(tempLeft);
+  };
 
   return (
     <View className="flex-1 bg-app-black p-5">
@@ -38,25 +71,27 @@ export default function GameScreen() {
         {/* Left Scoreboard */}
         <View className="mr-2">
           <Scoreboard 
-            teamName="Team A"
-            player1="Alice"
-            player2="Bob"
-            score={21}
+            teamName={leftTeam.name}
+            score={leftTeam.score}
           />
         </View>
 
         {/* Badminton Court */}
         <View className="flex-1">
-          <BadmintonCourt />
+          <BadmintonCourt 
+            leftTeam={leftTeam.players}
+            rightTeam={rightTeam.players}
+            onSwapLeftTeam={swapLeftTeamPlayers}
+            onSwapRightTeam={swapRightTeamPlayers}
+            onSwapTeams={swapTeams}
+          />
         </View>
 
         {/* Right Scoreboard */}
         <View className="ml-2">
           <Scoreboard 
-            teamName="Team B"
-            player1="Charlie"
-            player2="Dana"
-            score={18}
+            teamName={rightTeam.name}
+            score={rightTeam.score}
           />
         </View>
       </View>
