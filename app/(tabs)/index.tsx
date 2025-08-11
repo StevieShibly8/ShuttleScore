@@ -1,13 +1,8 @@
-import PlayerSelectionModal from "@/components/PlayerSelectionModal";
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/Card";
-import { Player } from "@/data/playerData";
+import { PlayerCard } from "@/components/PlayerCard";
+import SessionCard from "@/components/SessionCard";
+import StartSessionModal from "@/components/StartSessionModal";
 import { usePlayerStore } from "@/stores/playerStore";
+import { useSessionStore } from "@/stores/sessionStore";
 import { router } from "expo-router";
 import { useState } from "react";
 import { ScrollView, Text, TouchableOpacity, View } from "react-native";
@@ -15,23 +10,26 @@ import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 export default function HomeScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const players = usePlayerStore((state) => state.players);
+  const addSession = useSessionStore((state) => state.addSession);
+  const getCurrentSession = useSessionStore((state) => state.getCurrentSession);
+  const currentSession = getCurrentSession();
 
-  const handleStartSession = (selectedPlayers: Player[]) => {
+  const handleStartSession = (selectedPlayerIds: string[]) => {
     setModalVisible(false);
+    const newSession = addSession(selectedPlayerIds);
     router.push({
       pathname: "/session",
       params: {
-        players: JSON.stringify(
-          selectedPlayers.map((p) => ({ id: p.id, name: p.name }))
-        ),
+        sessionId: newSession.id,
       },
     });
   };
 
-  const topPlayers = (players || [])
-    .slice()
+  const topPlayerIds = players
+    ?.slice()
     .sort((a, b) => b.wins - a.wins)
-    .slice(0, 3);
+    .slice(0, 3)
+    .map((player) => player.id);
 
   return (
     <ScrollView className="flex-1 bg-app-black">
@@ -43,48 +41,46 @@ export default function HomeScreen() {
         </View>
 
         <TouchableOpacity
-          className="bg-app-primary py-4 rounded-xl-plus items-center mb-10 shadow-lg"
-          onPress={() => setModalVisible(true)}
+          className={`mb-10 ${!currentSession ? "bg-app-primary py-4 rounded-xl-plus items-center shadow-lg" : ""}`}
+          onPress={() => {
+            if (!currentSession) {
+              setModalVisible(true);
+            } else {
+              router.push({
+                pathname: "/session",
+                params: { sessionId: currentSession.id },
+              });
+            }
+          }}
         >
-          <Text className="text-white text-lg font-bold">
-            Start New Session
-          </Text>
+          {!currentSession ? (
+            <Text className="text-white text-lg font-bold">
+              Start New Session
+            </Text>
+          ) : (
+            <SessionCard session={currentSession} variant="primary" active />
+          )}
         </TouchableOpacity>
-
-        {/* Example Custom Card */}
-        <Card variant="default" className="mb-6">
-          <CardHeader>
-            <CardTitle>Custom Card Component</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Text className="text-app-text-secondary">
-              Simple, lightweight card using your existing CSS variables
-            </Text>
-          </CardContent>
-          <CardFooter>
-            <Text className="text-app-text-muted text-xs">
-              Built with NativeWind
-            </Text>
-          </CardFooter>
-        </Card>
 
         <View className="space-y-3">
           <Text className="text-white text-xl font-bold mb-2">Top Players</Text>
-          {topPlayers.map((player) => (
-            <View
-              key={player.id}
-              className="flex-row justify-between items-center py-3 px-4 rounded-xl bg-app-card border border-app-card-border"
+          {topPlayerIds?.map((playerId) => (
+            <TouchableOpacity
+              key={playerId}
+              onPress={() =>
+                router.push({
+                  pathname: "/player",
+                  params: { playerId },
+                })
+              }
             >
-              <Text className="text-white font-semibold">{player.name}</Text>
-              <Text className="text-app-text-muted text-sm">
-                {player.wins}W - {player.losses}L
-              </Text>
-            </View>
+              <PlayerCard id={playerId} />
+            </TouchableOpacity>
           ))}
         </View>
       </View>
 
-      <PlayerSelectionModal
+      <StartSessionModal
         visible={modalVisible}
         onClose={() => setModalVisible(false)}
         onStartSession={handleStartSession}

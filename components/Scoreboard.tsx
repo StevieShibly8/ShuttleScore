@@ -4,12 +4,16 @@ import { Text, TouchableOpacity, View } from "react-native";
 interface ScoreboardProps {
   teamName: string;
   score: number;
+  onScore?: () => void;
+  disabled?: boolean;
 }
 
-export default function Scoreboard({
+export const Scoreboard = ({
   teamName,
   score,
-}: ScoreboardProps) {
+  onScore,
+  disabled,
+}: ScoreboardProps) => {
   return (
     <View className="w-36">
       <Card className="h-full p-2">
@@ -23,9 +27,8 @@ export default function Scoreboard({
           <View className="items-center flex-1 justify-center">
             <TouchableOpacity
               className="bg-app-success-card w-24 h-20 rounded-lg items-center justify-center border border-app-primary-border"
-              onPress={() => {
-                // Increment logic will be added later
-              }}
+              onPress={onScore}
+              disabled={disabled}
             >
               <Text className="text-white text-5xl leading-none">+</Text>
             </TouchableOpacity>
@@ -34,4 +37,4 @@ export default function Scoreboard({
       </Card>
     </View>
   );
-}
+};
