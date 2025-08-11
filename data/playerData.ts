@@ -5,6 +5,5 @@ export interface Player {
   losses: number;
   email?: string;
   avatarUrl?: string;
-  rank: number;
-  rating: number;
+  rp: number;
 }
