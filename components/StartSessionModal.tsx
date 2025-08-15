@@ -1,7 +1,10 @@
+import { useDuoStore } from "@/stores/duoStore";
 import { usePlayerStore } from "@/stores/playerStore";
 import { useState } from "react";
 import {
+  KeyboardAvoidingView,
   Modal,
+  Platform,
   ScrollView,
   Text,
   TextInput,
@@ -12,7 +15,10 @@ import {
 interface StartSessionModalProps {
   visible: boolean;
   onClose: () => void;
-  onStartSession: (selectedPlayerIds: string[]) => void;
+  onStartSession: (
+    selectedPlayerIds: string[],
+    selectedDuoIds: string[]
+  ) => void;
 }
 
 const PlayerRow = ({
@@ -100,29 +106,70 @@ export default function StartSessionModal({
 }: StartSessionModalProps) {
   const players = usePlayerStore((state) => state.players);
   const addPlayer = usePlayerStore((state) => state.addPlayer);
+  const addDuo = useDuoStore((state) => state.addDuo);
+  const getDuoById = useDuoStore((state) => state.getDuoById);
+
   const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>([]);
+  const [selectedDuoIds, setSelectedDuoIds] = useState<string[]>([]);
   const [showAddPlayer, setShowAddPlayer] = useState(false);
   const [newPlayerName, setNewPlayerName] = useState("");
 
   const togglePlayer = (playerId: string) => {
-    setSelectedPlayerIds((prev) =>
-      prev.includes(playerId)
+    setSelectedPlayerIds((prev) => {
+      const newSelected = prev.includes(playerId)
         ? prev.filter((id) => id !== playerId)
-        : [...prev, playerId]
-    );
+        : [...prev, playerId];
+
+      // After updating selected players, update selected duos
+      setSelectedDuoIds(() => {
+        const duoIds: string[] = [];
+        // For every possible pair of selected players, check if the duo exists
+        for (let i = 0; i < newSelected.length; i++) {
+          for (let j = i + 1; j < newSelected.length; j++) {
+            const sortedIds = [newSelected[i], newSelected[j]].sort();
+            const duoId = sortedIds.join("-");
+            if (getDuoById(duoId)) {
+              duoIds.push(duoId);
+            }
+          }
+        }
+        return duoIds;
+      });
+
+      return newSelected;
+    });
   };
 
   const handleAddPlayer = () => {
     if (!newPlayerName.trim()) return;
     const newPlayer = addPlayer(newPlayerName.trim());
+
+    // Create new duos for the added player
+    players.forEach((player) => {
+      if (player.id !== newPlayer.id) {
+        const sortedPlayerIds = [newPlayer.id, player.id].sort();
+        const duoId = sortedPlayerIds.join("-");
+        if (!getDuoById(duoId)) {
+          const newDuo = addDuo(sortedPlayerIds);
+          setSelectedDuoIds((prev) => {
+            const bothSelected =
+              [...selectedPlayerIds, newPlayer.id].includes(player.id) &&
+              [...selectedPlayerIds, newPlayer.id].includes(newPlayer.id);
+            return bothSelected ? [...prev, newDuo.id] : prev;
+          });
+        }
+      }
+    });
+
     setSelectedPlayerIds((prev) => [...prev, newPlayer.id]);
     setNewPlayerName("");
     setShowAddPlayer(false);
   };
 
   const handleStartSession = () => {
-    onStartSession(selectedPlayerIds);
+    onStartSession(selectedPlayerIds, selectedDuoIds);
     setSelectedPlayerIds([]);
+    setSelectedDuoIds([]);
   };
 
   const handleCancel = () => {
@@ -139,72 +186,77 @@ export default function StartSessionModal({
       presentationStyle="overFullScreen"
     >
       <View className="flex-1 bg-app-overlay justify-end">
-        <View className="rounded-t-3xl pt-3 px-5 pb-10 max-h-[85%] bg-app-modal-bg">
-          <View className="w-10 h-1 bg-app-text-muted rounded-full self-center mb-5" />
-          <Text className="text-center mb-6 text-2xl font-semibold text-app-text-primary">
-            Select Players
-          </Text>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={{ flex: 1, justifyContent: "flex-end" }}
+        >
+          <View className="rounded-t-3xl pt-3 px-5 pb-10 max-h-[85%] bg-app-modal-bg">
+            <View className="w-10 h-1 bg-app-text-muted rounded-full self-center mb-5" />
+            <Text className="text-center mb-6 text-2xl font-semibold text-app-text-primary">
+              Select Players
+            </Text>
 
-          <ScrollView
-            className="mb-6 space-y-1"
-            showsVerticalScrollIndicator={false}
-          >
-            {players.map((player) => (
-              <PlayerRow
-                key={player.id}
-                playerName={player.name}
-                selected={selectedPlayerIds.includes(player.id)}
-                onPress={() => togglePlayer(player.id)}
+            <ScrollView
+              className="mb-6 space-y-1"
+              showsVerticalScrollIndicator={false}
+            >
+              {players.map((player) => (
+                <PlayerRow
+                  key={player.id}
+                  playerName={player.name}
+                  selected={selectedPlayerIds.includes(player.id)}
+                  onPress={() => togglePlayer(player.id)}
+                />
+              ))}
+              <AddPlayerRow
+                show={showAddPlayer}
+                value={newPlayerName}
+                onChange={setNewPlayerName}
+                onAdd={handleAddPlayer}
+                onCancel={() => {
+                  setShowAddPlayer(false);
+                  setNewPlayerName("");
+                }}
+                onShow={() => setShowAddPlayer(true)}
               />
-            ))}
-            <AddPlayerRow
-              show={showAddPlayer}
-              value={newPlayerName}
-              onChange={setNewPlayerName}
-              onAdd={handleAddPlayer}
-              onCancel={() => {
-                setShowAddPlayer(false);
-                setNewPlayerName("");
-              }}
-              onShow={() => setShowAddPlayer(true)}
-            />
-          </ScrollView>
+            </ScrollView>
 
-          <Text className="text-center mb-6 text-sm text-app-text-muted">
-            {selectedPlayerIds.length} players selected (minimum 4 required)
-          </Text>
+            <Text className="text-center mb-6 text-sm text-app-text-muted">
+              {selectedPlayerIds.length} players selected (minimum 4 required)
+            </Text>
 
-          <View className="flex-row gap-4">
-            <TouchableOpacity
-              className="flex-1 py-4 rounded-xl border-2 border-app-primary items-center"
-              onPress={handleCancel}
-            >
-              <Text className="text-app-primary text-base font-semibold">
-                Cancel
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              className={`flex-1 py-4 rounded-xl items-center ${
-                selectedPlayerIds.length < 4
-                  ? "bg-app-disabled"
-                  : "bg-app-primary"
-              }`}
-              onPress={handleStartSession}
-              disabled={selectedPlayerIds.length < 4}
-            >
-              <Text
-                className={`text-base font-semibold ${
-                  selectedPlayerIds.length < 4
-                    ? "text-app-text-disabled"
-                    : "text-app-white"
-                }`}
+            <View className="flex-row gap-4">
+              <TouchableOpacity
+                className="flex-1 py-4 rounded-xl border-2 border-app-primary items-center"
+                onPress={handleCancel}
               >
-                Start Session
-              </Text>
-            </TouchableOpacity>
+                <Text className="text-app-primary text-base font-semibold">
+                  Cancel
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                className={`flex-1 py-4 rounded-xl items-center ${
+                  selectedPlayerIds.length < 4
+                    ? "bg-app-disabled"
+                    : "bg-app-primary"
+                }`}
+                onPress={handleStartSession}
+                disabled={selectedPlayerIds.length < 4}
+              >
+                <Text
+                  className={`text-base font-semibold ${
+                    selectedPlayerIds.length < 4
+                      ? "text-app-text-disabled"
+                      : "text-app-white"
+                  }`}
+                >
+                  Start Session
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </View>
     </Modal>
   );
