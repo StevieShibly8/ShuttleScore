@@ -20,28 +20,27 @@ export default function SessionCard({
 }) {
   return (
     <Card variant={variant}>
-      <CardTitle className={variant === "primary" ? "text-app-primary" : ""}>
-        <Text
-          className={
-            variant === "primary"
-              ? "text-app-primary"
-              : "text-white font-semibold text-lg"
-          }
-        >
-          {active ? "Live Session" : session.date}
-        </Text>
+      <CardTitle
+        className={
+          variant === "primary"
+            ? "text-app-primary"
+            : "text-white font-semibold text-lg"
+        }
+      >
+        {active ? "Live Session" : session.date}
       </CardTitle>
       <CardHeader>
         <Text className="text-app-text-secondary text-sm mb-2">
           {active
             ? session.date
-            : `${session.pastGames.length} games completed`}
+            : `${session.pastGames.length} ${session.pastGames.length === 1 ? "game" : "games"} completed`}
         </Text>
       </CardHeader>
       <CardContent>
         {active && (
           <Text className="text-app-text-secondary text-sm">
-            {session.pastGames.length} games played
+            {session.pastGames.length}
+            {session.pastGames.length === 1 ? " game" : " games"} played
           </Text>
         )}
       </CardContent>

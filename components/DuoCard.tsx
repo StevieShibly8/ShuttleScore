@@ -1,32 +1,45 @@
+import { useDuoStore } from "@/stores/duoStore";
 import { usePlayerStore } from "@/stores/playerStore";
 import { useRouter } from "expo-router";
 import { Text, TouchableOpacity, View } from "react-native";
 
-interface PlayerCardProps {
+interface DuoCardProps {
   id: string;
   wins?: number;
   losses?: number;
   rank?: number;
 }
 
-export const PlayerCard = ({ id, wins, losses, rank }: PlayerCardProps) => {
+export const DuoCard = ({ id, wins, losses, rank }: DuoCardProps) => {
+  const getDuoById = useDuoStore((state) => state.getDuoById);
   const getPlayerById = usePlayerStore((state) => state.getPlayerById);
-  const player = getPlayerById(id);
+  const duo = getDuoById(id);
   const router = useRouter();
 
-  const w = wins ?? player?.wins ?? 0;
-  const l = losses ?? player?.losses ?? 0;
+  // Get player objects
+  const player1 = duo?.playerIds?.[0] ? getPlayerById(duo.playerIds[0]) : null;
+  const player2 = duo?.playerIds?.[1] ? getPlayerById(duo.playerIds[1]) : null;
+
+  // Duo name
+  const duoName =
+    player1 && player2 ? `${player1.name} & ${player2.name}` : "Unknown Duo";
+
+  // Average RP
+  const rp1 = player1?.rp ?? 0;
+  const rp2 = player2?.rp ?? 0;
+  const avgRp = Math.round((rp1 + rp2) / 2);
+
+  const cappedRp = Math.min(avgRp, 100);
+  const stars = Math.max(1, Math.floor(cappedRp / 20) + 1);
+
+  const w = wins ?? duo?.wins ?? 0;
+  const l = losses ?? duo?.losses ?? 0;
   const p = w + l;
   const rate = p > 0 ? Math.round((w / p) * 100) : 0;
 
-  const cappedRp = Math.min(player?.rp ?? 0, 100);
-  const stars = Math.max(1, Math.floor(cappedRp / 20) + 1);
-
   return (
     <TouchableOpacity
-      onPress={() =>
-        router.push({ pathname: "/playerProfile", params: { id } })
-      }
+      onPress={() => router.push({ pathname: "/duoProfile", params: { id } })}
     >
       <View
         style={{
@@ -41,7 +54,7 @@ export const PlayerCard = ({ id, wins, losses, rank }: PlayerCardProps) => {
           borderColor: "#333a44",
         }}
       >
-        {/* Only render the rank column if rank is provided */}
+        {/* Middle: Rank */}
         {rank && (
           <View
             style={{
@@ -67,7 +80,7 @@ export const PlayerCard = ({ id, wins, losses, rank }: PlayerCardProps) => {
           </View>
         )}
 
-        {/* Player info: if no rank, align left; if rank, add marginLeft for spacing */}
+        {/* Left: Duo name and stats */}
         <View
           style={{
             flex: 1,
@@ -75,9 +88,7 @@ export const PlayerCard = ({ id, wins, losses, rank }: PlayerCardProps) => {
             marginLeft: rank ? 0 : 8,
           }}
         >
-          <Text className="text-white font-semibold text-lg">
-            {player?.name || "Unknown Player"}
-          </Text>
+          <Text className="text-white font-semibold text-lg">{duoName}</Text>
           <Text className="text-app-text-muted text-sm mt-1">
             {w}W - {l}L - {p}P
           </Text>
@@ -86,6 +97,7 @@ export const PlayerCard = ({ id, wins, losses, rank }: PlayerCardProps) => {
           </Text>
         </View>
 
+        {/* Right: RP and stars */}
         <View
           style={{
             alignItems: "flex-end",
@@ -93,15 +105,12 @@ export const PlayerCard = ({ id, wins, losses, rank }: PlayerCardProps) => {
             justifyContent: "center",
           }}
         >
-          <Text className="text-app-primary text-sm font-semibold">
-            RP: {player?.rp}
+          <Text className="text-app-success text-sm font-semibold">
+            RP: {avgRp}
           </Text>
           <View style={{ flexDirection: "row", marginTop: 4 }}>
             {[...Array(stars)].map((_, i) => (
-              <Text
-                key={i}
-                className="text-yellow-400 text-lg text-app-warning"
-              >
+              <Text key={i} className="text-yellow-400 text-lg">
                 ★
               </Text>
             ))}

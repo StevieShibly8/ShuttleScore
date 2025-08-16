@@ -6,31 +6,48 @@ import { withAsyncStoragePersist } from "./middleware";
 
 interface SessionStore {
   sessions: Session[];
-  addSession: (playerIds: string[]) => Session;
+  addSession: (playerIds: string[], duoIds: string[]) => Session;
   updateSession: (id: string, session: Partial<Session>) => void;
   removeSession: (id: string) => void;
   getSessionById: (id: string) => Session | undefined;
   getCurrentSession: () => Session | undefined;
+  endSession: (id: string) => void;
   addGameToSession: (sessionId: string, teamA: Team, teamB: Team) => Game;
   getGameById: (sessionId: string, gameId: string) => Game | undefined;
   getCurrentGame: (sessionId: string) => Game | undefined;
-  endSession: (id: string) => void;
+  endCurrentGame: (sessionId: string, isGameCompleted: boolean) => void;
 }
 
 const sessionStoreCreator: StateCreator<SessionStore> = (set, get) => ({
   sessions: [],
-  addSession: (playerIds: string[]) => {
+  addSession: (playerIds: string[], duoIds: string[]) => {
+    const gamesPlayedPerPlayer: Record<string, number> = {};
+    const gamesPlayedPerDuo: Record<string, number> = {};
+    const gamesWonPerPlayer: Record<string, number> = {};
+    const gamesWonPerDuo: Record<string, number> = {};
+
+    playerIds.forEach((pid) => {
+      gamesPlayedPerPlayer[pid] = 0;
+      gamesWonPerPlayer[pid] = 0;
+    });
+
+    duoIds.forEach((did) => {
+      gamesPlayedPerDuo[did] = 0;
+      gamesWonPerDuo[did] = 0;
+    });
+
     const newSession: Session = {
       id: uuid.v4() as string,
       playerIds,
+      duoIds,
       date: new Date().toLocaleString(),
       pastGames: [],
       currentGame: null,
-      gamesPlayedPerPlayer: {},
-      gamesPlayedPerDuo: {},
-      consecutiveGamesPlayedPerPlayer: {},
-      gamesWonPerPlayer: {},
-      gamesWonPerDuo: {},
+      gamesPlayedPerPlayer,
+      gamesPlayedPerDuo,
+      gamesWonPerPlayer,
+      gamesWonPerDuo,
+      priorityPickPlayerIds: [],
       isSessionActive: true,
     };
     set((state: SessionStore) => ({
@@ -53,17 +70,20 @@ const sessionStoreCreator: StateCreator<SessionStore> = (set, get) => ({
   getCurrentSession: () =>
     get().sessions.find((s: Session) => s.isSessionActive),
   addGameToSession: (sessionId: string, teamA: Team, teamB: Team) => {
-    const newGame = {
+    const newGame: Game = {
       id: uuid.v4() as string,
       teamA,
       teamB,
+      isTeamSwapped: false,
+      isTeamASwapped: false,
+      isTeamBSwapped: false,
+      server: "A",
+      initialServer: "A",
       isGameActive: true,
+      undoqueue: [],
+      redoqueue: [],
     };
-    set((state: SessionStore) => ({
-      sessions: state.sessions.map((s: Session) =>
-        s.id === sessionId ? { ...s, currentGame: newGame } : s
-      ),
-    }));
+    get().updateSession(sessionId, { currentGame: newGame });
     return newGame;
   },
   getGameById: (sessionId: string, gameId: string) => {
@@ -92,6 +112,19 @@ const sessionStoreCreator: StateCreator<SessionStore> = (set, get) => ({
       currentGame: updatedCurrentGame,
       pastGames: updatedPastGames,
     });
+  },
+  endCurrentGame: (sessionId: string, isGameCompleted: boolean) => {
+    const session = get().getSessionById(sessionId);
+    if (!session || !session.currentGame) return;
+
+    const update: Partial<Session> = { currentGame: null };
+
+    if (isGameCompleted) {
+      const endedGame = { ...session.currentGame, isGameActive: false };
+      update.pastGames = [...session.pastGames, endedGame];
+    }
+
+    get().updateSession(sessionId, update);
   },
 });
 

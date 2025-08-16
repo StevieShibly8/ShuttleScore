@@ -60,7 +60,7 @@ npm install --dev tailwindcss
 // React Native components with NativeWind className
 import { View, Text, TouchableOpacity } from "react-native";
 
-<View className="flex-1 bg-app-black p-5">
+<View className="flex-1 bg-app-background p-5">
   <Text className="text-app-text-primary text-2xl font-bold">Title</Text>
   <TouchableOpacity className="bg-app-primary rounded-xl-plus py-4">
     <Text className="text-app-white font-semibold">Button</Text>
@@ -87,7 +87,7 @@ if (italic) classNames.push("italic");
 
 **Base Colors:**
 
-- `app-black` - #000000 (main background)
+- `app-black` - #000000
 - `app-white` - #FFFFFF
 - `app-primary` - #6c935c (badminton court green)
 - `app-secondary` - #6366F1 (indigo secondary)
@@ -95,6 +95,7 @@ if (italic) classNames.push("italic");
 - `app-info` - #3B82F6 (blue info)
 - `app-warning` - #F59E0B (amber warning)
 - `app-danger` - #EF4444 (red danger)
+- `app-background` - #09282eff (main background)
 
 **Card Styles:**
 
@@ -143,7 +144,7 @@ if (italic) classNames.push("italic");
 
 ```javascript
 // Main app background
-<View className="bg-app-black">
+<View className="bg-app-background">
 
 // Primary button
 <TouchableOpacity className="bg-app-primary rounded-xl-plus">

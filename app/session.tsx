@@ -1,4 +1,6 @@
+import { DuoCard } from "@/components/DuoCard";
 import { GameCard } from "@/components/GameCard";
+import ModalPopup from "@/components/ModalPopup";
 import { PlayerCard } from "@/components/PlayerCard";
 import StartGameModal from "@/components/StartGameModal";
 import { Duo } from "@/data/duoData";
@@ -19,12 +21,14 @@ export default function SessionScreen() {
   const endSession = useSessionStore((state) => state.endSession);
 
   const [modalVisible, setModalVisible] = useState(false);
+  const [showEndSessionModal, setShowEndSessionModal] = useState(false);
 
   const session = getSessionById(sessionId as string);
   const pastGames = session?.pastGames;
   const playerIds = session?.playerIds;
+  const duoIds = session?.duoIds;
 
-  const getExistingOrCreateNewDuo = (playerIds: string[]): Duo => {
+  const getExistingDuo = (playerIds: string[]): Duo => {
     const sortedIds = [...playerIds].sort();
     const duoId = sortedIds.join("-");
     const existingDuo = getDuoById(duoId);
@@ -35,76 +39,131 @@ export default function SessionScreen() {
     return newDuo;
   };
 
-  const handleStartGame = (): ((
-    teamAplayerIds: { playerIds: string[] },
-    teamBplayerIds: { playerIds: string[] }
-  ) => void) => {
-    return (teamA, teamB) => {
-      const duoA: Duo = getExistingOrCreateNewDuo(teamA.playerIds);
-      const duoB: Duo = getExistingOrCreateNewDuo(teamB.playerIds);
+  const handleStartGame = (
+    teamAplayerIds: string[],
+    teamBplayerIds: string[]
+  ) => {
+    const duoA: Duo = getExistingDuo(teamAplayerIds);
+    const duoB: Duo = getExistingDuo(teamBplayerIds);
 
-      const teamAObj: Team = { duoId: duoA.id, score: 0 };
-      const teamBObj: Team = { duoId: duoB.id, score: 0 };
+    const teamAObj: Team = { duoId: duoA.id, score: 0 };
+    const teamBObj: Team = { duoId: duoB.id, score: 0 };
 
-      setModalVisible(false);
-      addGameToSession(sessionId as string, teamAObj, teamBObj);
+    setModalVisible(false);
+    addGameToSession(sessionId as string, teamAObj, teamBObj);
 
-      router.push({
-        pathname: "/game",
-        params: { sessionId },
-      });
-    };
+    router.push({
+      pathname: "/currentGame",
+      params: { sessionId },
+    });
   };
 
   return (
-    <ScrollView className="flex-1 bg-app-black">
+    <ScrollView className="flex-1 bg-app-background">
       <View className="p-5">
         <View className="flex-row items-center mb-8">
           <TouchableOpacity onPress={() => router.back()} className="mr-3 p-1">
             <Ionicons name="arrow-back" size={28} color="#fff" />
           </TouchableOpacity>
-          <Text className="text-3xl text-white font-800 flex-1">Session</Text>
+          <Text className="text-3xl text-white font-800 flex-1">Home</Text>
+          {session?.isSessionActive && (
+            <TouchableOpacity
+              className="bg-app-danger py-4 px-4 rounded-xl-plus items-center shadow-lg"
+              onPress={() => {
+                setShowEndSessionModal(true);
+              }}
+            >
+              <Text className="text-white font-bold">End Session</Text>
+            </TouchableOpacity>
+          )}
         </View>
+
+        {/* Quit Confirmation Popup */}
+        <ModalPopup
+          visible={showEndSessionModal}
+          messageTitle="End Session?"
+          messageBody="The current session will be ended and you will be rerouted to the Sessions page. This action cannot be undone."
+          cancelText="Cancel"
+          confirmText="End"
+          cancelButtonColor="#444"
+          confirmButtonColor="#921721bc"
+          onCancel={() => setShowEndSessionModal(false)}
+          onConfirm={() => {
+            setShowEndSessionModal(false);
+            endSession(sessionId as string);
+            router.replace("/sessions");
+          }}
+        />
 
         {session?.isSessionActive && (
           <>
-            <TouchableOpacity
-              className="bg-app-primary py-5 rounded-xl-plus items-center mb-8 shadow-lg"
-              onPress={() => setModalVisible(true)}
-            >
-              <Text className="text-white text-lg font-bold">
-                Start New Game
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              className="bg-app-danger py-4 rounded-xl-plus items-center mb-8 shadow-lg"
-              onPress={() => {
-                endSession(sessionId as string);
-                router.push("/sessions");
-              }}
-            >
-              <Text className="text-white text-lg font-bold">End Session</Text>
-            </TouchableOpacity>
+            {!session.currentGame ? (
+              <TouchableOpacity
+                className="bg-app-primary py-4 rounded-xl-plus items-center mb-8 shadow-lg"
+                onPress={() => setModalVisible(true)}
+              >
+                <Text className="text-white text-lg font-bold">
+                  Start New Game
+                </Text>
+              </TouchableOpacity>
+            ) : (
+              <View className="mb-8">
+                <Text className="text-white text-xl font-bold mb-4">
+                  Current Game
+                </Text>
+                <GameCard
+                  key={session.currentGame.id}
+                  gameId={session.currentGame.id}
+                  sessionId={sessionId as string}
+                  isActive={true}
+                />
+              </View>
+            )}
           </>
         )}
 
         <View className="mb-8">
           <Text className="text-white text-xl font-bold mb-4">Players</Text>
           <View className="space-y-3">
-            {playerIds?.map((playerId) => (
-              <TouchableOpacity
-                key={playerId}
-                onPress={() =>
-                  router.push({
-                    pathname: "/player",
-                    params: { playerId },
-                  })
-                }
-              >
-                <PlayerCard id={playerId} />
-              </TouchableOpacity>
-            ))}
+            {[...(playerIds ?? [])]
+              .sort((a, b) => {
+                const winsA = session?.gamesWonPerPlayer[a] ?? 0;
+                const winsB = session?.gamesWonPerPlayer[b] ?? 0;
+                return winsB - winsA; // Descending order
+              })
+              .map((playerId) => {
+                const wins = session?.gamesWonPerPlayer[playerId] ?? 0;
+                const played = session?.gamesPlayedPerPlayer[playerId] ?? 0;
+                const losses = played - wins;
+                return (
+                  <PlayerCard
+                    key={playerId}
+                    id={playerId}
+                    wins={wins}
+                    losses={losses}
+                  />
+                );
+              })}
+          </View>
+        </View>
+
+        <View className="mb-8">
+          <Text className="text-white text-xl font-bold mb-4">Duos</Text>
+          <View className="space-y-3">
+            {[...(duoIds ?? [])]
+              .sort((a, b) => {
+                const winsA = session?.gamesWonPerDuo[a] ?? 0;
+                const winsB = session?.gamesWonPerDuo[b] ?? 0;
+                return winsB - winsA; // Descending order
+              })
+              .map((duoId) => {
+                const wins = session?.gamesWonPerDuo[duoId] ?? 0;
+                const played = session?.gamesPlayedPerDuo[duoId] ?? 0;
+                const losses = played - wins;
+                return (
+                  <DuoCard key={duoId} id={duoId} wins={wins} losses={losses} />
+                );
+              })}
           </View>
         </View>
 
@@ -118,17 +177,12 @@ export default function SessionScreen() {
             </View>
           ) : (
             pastGames.map((game) => (
-              <TouchableOpacity
+              <GameCard
                 key={game.id}
-                onPress={() =>
-                  router.push({
-                    pathname: "/game",
-                    params: { gameId: game.id, sessionId },
-                  })
-                }
-              >
-                <GameCard game={game} />
-              </TouchableOpacity>
+                gameId={game.id}
+                sessionId={sessionId as string}
+                isActive={false}
+              />
             ))
           )}
         </View>
@@ -136,8 +190,9 @@ export default function SessionScreen() {
       <StartGameModal
         visible={modalVisible}
         onClose={() => setModalVisible(false)}
-        onStartGame={handleStartGame()}
+        onStartGame={handleStartGame}
         sessionPlayerIds={playerIds ?? []}
+        sessionId={sessionId as string}
       />
     </ScrollView>
   );

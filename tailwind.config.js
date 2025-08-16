@@ -14,7 +14,8 @@ module.exports = {
           success: "#22C55E",
           info: "#3B82F6",
           warning: "#F59E0B",
-          danger: "#EF4444",
+          danger: "#921721bc",
+          background: "#1b2129ff",
 
           // Card styles
           card: "rgba(255, 255, 255, 0.05)",

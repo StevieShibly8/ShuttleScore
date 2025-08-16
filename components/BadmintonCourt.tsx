@@ -1,5 +1,7 @@
-import { useRef } from "react";
-import { Text, View } from "react-native";
+import { useSessionStore } from "@/stores/sessionStore";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { useEffect, useRef } from "react";
+import { Text, TouchableOpacity, View } from "react-native";
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -8,130 +10,256 @@ import Animated, {
 import SwapButton from "./SwapButton";
 
 interface BadmintonCourtProps {
-  leftTeam: { top: string; bottom: string };
-  rightTeam: { top: string; bottom: string };
+  sessionId: string;
+  teamA: { player1Name: string; player2Name: string };
+  teamB: { player1Name: string; player2Name: string };
   server: "A" | "B";
   serverIndex: number;
+  gameStarted: boolean;
+  isTeamSwapped: boolean;
   onSwapTeams: () => void;
+  onSwapServer: () => void;
 }
 
 export default function BadmintonCourt({
-  leftTeam,
-  rightTeam,
+  sessionId,
+  teamA,
+  teamB,
   server,
   serverIndex,
+  gameStarted,
+  isTeamSwapped,
   onSwapTeams,
+  onSwapServer,
 }: BadmintonCourtProps) {
-  // Slide animation shared values
-  const leftTopTranslateY = useSharedValue(0);
-  const leftBottomTranslateY = useSharedValue(0);
-  const rightTopTranslateY = useSharedValue(0);
-  const rightBottomTranslateY = useSharedValue(0);
-  const leftTeamTranslateX = useSharedValue(0);
-  const rightTeamTranslateX = useSharedValue(0);
+  const getCurrentGame = useSessionStore((state) => state.getCurrentGame);
+  const updateSession = useSessionStore((state) => state.updateSession);
+  const currentGame = getCurrentGame(sessionId as string);
 
-  const leftSwapped = useRef(false);
-  const rightSwapped = useRef(false);
+  useEffect(() => {
+    const { x, y } = getShuttlecockTargetPosition(server, serverIndex);
+    shuttlecockX.value = withTiming(x, { duration: 250 });
+    shuttlecockY.value = withTiming(y, { duration: 250 });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [server, serverIndex]);
+
+  // Slide animation shared values
+  const teamAPlayer1TranslateX = useSharedValue(0);
+  const teamAPlayer1TranslateY = useSharedValue(0);
+  const teamAPlayer2TranslateX = useSharedValue(0);
+  const teamAPlayer2TranslateY = useSharedValue(0);
+  const teamBPlayer1TranslateX = useSharedValue(0);
+  const teamBPlayer1TranslateY = useSharedValue(0);
+  const teamBPlayer2TranslateX = useSharedValue(0);
+  const teamBPlayer2TranslateY = useSharedValue(0);
+  const shuttlecockX = useSharedValue(0);
+  const shuttlecockY = useSharedValue(0);
+  const swapServerButtonRotation = useSharedValue(0);
+
+  const isTeamASwapped = currentGame?.isTeamASwapped ?? false;
+  const isTeamBSwapped = currentGame?.isTeamBSwapped ?? false;
+  const teamASwapped = useRef(false);
+  const teamBSwapped = useRef(false);
   const teamSwapped = useRef(false);
+  const didInit = useRef(false);
+
+  useEffect(() => {
+    if (!didInit.current) {
+      // Horizontal swap
+      if (isTeamSwapped) {
+        teamAPlayer1TranslateX.value = 310;
+        teamAPlayer2TranslateX.value = 310;
+        teamBPlayer1TranslateX.value = -310;
+        teamBPlayer2TranslateX.value = -310;
+        teamSwapped.current = true;
+      } else {
+        teamAPlayer1TranslateX.value = 0;
+        teamAPlayer2TranslateX.value = 0;
+        teamBPlayer1TranslateX.value = 0;
+        teamBPlayer2TranslateX.value = 0;
+        teamSwapped.current = false;
+      }
+      // Vertical swap for Team A
+      if (isTeamASwapped) {
+        teamAPlayer1TranslateY.value = 115;
+        teamAPlayer2TranslateY.value = -115;
+        teamASwapped.current = true;
+      } else {
+        teamAPlayer1TranslateY.value = 0;
+        teamAPlayer2TranslateY.value = 0;
+        teamASwapped.current = false;
+      }
+      // Vertical swap for Team B
+      if (isTeamBSwapped) {
+        teamBPlayer1TranslateY.value = 115;
+        teamBPlayer2TranslateY.value = -115;
+        teamBSwapped.current = true;
+      } else {
+        teamBPlayer1TranslateY.value = 0;
+        teamBPlayer2TranslateY.value = 0;
+        teamBSwapped.current = false;
+      }
+      didInit.current = true;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isTeamSwapped, isTeamASwapped, isTeamBSwapped]);
 
   // Animated styles using transforms
-  const leftTopStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: leftTopTranslateY.value }],
+  const teamAPlayer1Style = useAnimatedStyle(() => ({
+    transform: [
+      { translateX: teamAPlayer1TranslateX.value },
+      { translateY: teamAPlayer1TranslateY.value },
+    ],
   }));
 
-  const leftBottomStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: leftBottomTranslateY.value }],
+  const teamAPlayer2Style = useAnimatedStyle(() => ({
+    transform: [
+      { translateX: teamAPlayer2TranslateX.value },
+      { translateY: teamAPlayer2TranslateY.value },
+    ],
   }));
 
-  const rightTopStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: rightTopTranslateY.value }],
+  const teamBPlayer1Style = useAnimatedStyle(() => ({
+    transform: [
+      { translateX: teamBPlayer1TranslateX.value },
+      { translateY: teamBPlayer1TranslateY.value },
+    ],
   }));
 
-  const rightBottomStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: rightBottomTranslateY.value }],
+  const teamBPlayer2Style = useAnimatedStyle(() => ({
+    transform: [
+      { translateX: teamBPlayer2TranslateX.value },
+      { translateY: teamBPlayer2TranslateY.value },
+    ],
   }));
 
-  const leftTeamStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: leftTeamTranslateX.value }],
+  const shuttlecockStyle = useAnimatedStyle(() => ({
+    position: "absolute",
+    left: shuttlecockX.value,
+    top: shuttlecockY.value,
   }));
 
-  const rightTeamStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: rightTeamTranslateX.value }],
+  const swapServerButtonStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${swapServerButtonRotation.value}deg` }],
   }));
 
   /// Helper for vertical swap animation
   const animateVerticalSwap = (
-    topValue: typeof leftTopTranslateY,
-    bottomValue: typeof leftBottomTranslateY,
-    ifSwapped: boolean
+    player1TranslateY: typeof teamAPlayer1TranslateY,
+    player2TranslateY: typeof teamAPlayer2TranslateY,
+    animationTime: number,
+    swapped: boolean
   ) => {
-    if (ifSwapped) {
-      topValue.value = withTiming(0, { duration: 1000 });
-      bottomValue.value = withTiming(0, { duration: 1000 });
+    if (swapped) {
+      player1TranslateY.value = withTiming(0, { duration: animationTime });
+      player2TranslateY.value = withTiming(0, { duration: animationTime });
     } else {
-      topValue.value = withTiming(115, { duration: 1000 });
-      bottomValue.value = withTiming(-115, { duration: 1000 });
+      player1TranslateY.value = withTiming(115, { duration: animationTime });
+      player2TranslateY.value = withTiming(-115, { duration: animationTime });
     }
   };
 
   // Helper for horizontal swap animation
   const animateHorizontalSwap = (
-    leftValue: typeof leftTeamTranslateX,
-    rightValue: typeof rightTeamTranslateX,
-    ifSwapped: boolean
+    teamAplayer1TranslateX: typeof teamAPlayer1TranslateX,
+    teamAplayer2TranslateX: typeof teamAPlayer2TranslateX,
+    teamBplayer1TranslateX: typeof teamBPlayer1TranslateX,
+    teamBplayer2TranslateX: typeof teamBPlayer2TranslateX,
+    animationTime: number,
+    swapped: boolean
   ) => {
-    if (ifSwapped) {
-      leftValue.value = withTiming(0, { duration: 1000 });
-      rightValue.value = withTiming(0, { duration: 1000 });
+    if (swapped) {
+      teamAplayer1TranslateX.value = withTiming(0, { duration: animationTime });
+      teamAplayer2TranslateX.value = withTiming(0, { duration: animationTime });
+      teamBplayer1TranslateX.value = withTiming(0, { duration: animationTime });
+      teamBplayer2TranslateX.value = withTiming(0, { duration: animationTime });
     } else {
-      leftValue.value = withTiming(250, { duration: 1000 });
-      rightValue.value = withTiming(-250, { duration: 1000 });
+      teamAplayer1TranslateX.value = withTiming(310, {
+        duration: animationTime,
+      });
+      teamAplayer2TranslateX.value = withTiming(310, {
+        duration: animationTime,
+      });
+      teamBplayer1TranslateX.value = withTiming(-310, {
+        duration: animationTime,
+      });
+      teamBplayer2TranslateX.value = withTiming(-310, {
+        duration: animationTime,
+      });
     }
   };
 
   // Swap functions with slide animations
-  const handleSwapLeftTeam = () => {
+  const handleSwapTeamA = () => {
+    if (!currentGame) return;
     animateVerticalSwap(
-      leftTopTranslateY,
-      leftBottomTranslateY,
-      leftSwapped.current
+      teamAPlayer1TranslateY,
+      teamAPlayer2TranslateY,
+      250,
+      teamASwapped.current
     );
-    leftSwapped.current = !leftSwapped.current;
+    teamASwapped.current = !teamASwapped.current;
+    updateSession(sessionId as string, {
+      currentGame: {
+        ...currentGame,
+        isTeamASwapped: teamASwapped.current,
+      },
+    });
   };
 
-  const handleSwapRightTeam = () => {
+  const handleSwapTeamB = () => {
+    if (!currentGame) return;
+
     animateVerticalSwap(
-      rightTopTranslateY,
-      rightBottomTranslateY,
-      rightSwapped.current
+      teamBPlayer1TranslateY,
+      teamBPlayer2TranslateY,
+      250,
+      teamBSwapped.current
     );
-    rightSwapped.current = !rightSwapped.current;
+    teamBSwapped.current = !teamBSwapped.current;
+    updateSession(sessionId as string, {
+      currentGame: {
+        ...currentGame,
+        isTeamBSwapped: teamBSwapped.current,
+      },
+    });
   };
 
   const handleSwapTeams = () => {
     animateHorizontalSwap(
-      leftTeamTranslateX,
-      rightTeamTranslateX,
+      teamAPlayer1TranslateX,
+      teamAPlayer2TranslateX,
+      teamBPlayer1TranslateX,
+      teamBPlayer2TranslateX,
+      500,
       teamSwapped.current
     );
     teamSwapped.current = !teamSwapped.current;
     onSwapTeams();
   };
 
+  function getShuttlecockTargetPosition(
+    server: "A" | "B",
+    serverIndex: number
+  ) {
+    let visualServer = server;
+    if (isTeamSwapped) {
+      visualServer = server === "A" ? "B" : "A";
+    }
+
+    if (visualServer === "A" && serverIndex === 0) return { x: 130, y: 130 }; // Bottom left
+    if (visualServer === "A" && serverIndex === 1) return { x: 130, y: 75 }; // Top left
+    if (visualServer === "B" && serverIndex === 0) return { x: 340, y: 75 }; // Top right
+    if (visualServer === "B" && serverIndex === 1) return { x: 340, y: 130 }; // Bottom right
+    return { x: 130, y: 75 };
+  }
+
   return (
     <View className="flex-1 bg-app-primary rounded-xl-plus p-6">
-      <View className="flex-1 border-2 border-white rounded-lg p-2">
+      <View className="flex-1 border-2 border-white rounded-lg p-1">
         <View className="flex-1 flex-col relative">
           {/* Net line (now vertical) */}
-          <View
-            className="absolute top-0 bottom-0 left-1/2 w-0.5 bg-white opacity-80"
-            style={{
-              borderStyle: "dashed",
-              borderLeftWidth: 2,
-              borderLeftColor: "white",
-              backgroundColor: "transparent",
-            }}
-          />
+          <View className="absolute top-0 bottom-0 left-1/2 w-0.5 opacity-60 border-l-2 border-dashed border-app-white" />
 
           {/* Short service line - left */}
           <View className="absolute top-0 bottom-0 left-1/3 w-0.5 bg-white opacity-60" />
@@ -157,62 +285,180 @@ export default function BadmintonCourt({
           {/* Center line - bottom court (from short service line to right border) */}
           <View className="absolute top-1/2 left-2/3 right-0 h-0.5 bg-white opacity-60" />
 
-          {/* Left Side Player Swap Button */}
-          <View className="absolute left-2 top-1/2 -translate-y-1/2 z-10">
-            <SwapButton direction="vertical" onPress={handleSwapLeftTeam} />
-          </View>
+          {/* Shuttlecock Icon */}
+          <Animated.View style={shuttlecockStyle}>
+            <MaterialCommunityIcons name="badminton" size={20} color="#fff" />
+          </Animated.View>
 
-          {/* Right Side Player Swap Button */}
-          <View className="absolute right-2 top-1/2 -translate-y-1/2 z-10">
-            <SwapButton direction="vertical" onPress={handleSwapRightTeam} />
-          </View>
+          {/* Swap Buttons */}
+          {!gameStarted && (
+            <>
+              {/* Left Side Player Swap Button */}
+              <View className="absolute left-8 top-1/2 -translate-y-1/2 z-10">
+                <SwapButton
+                  direction="vertical"
+                  onPress={
+                    teamSwapped.current ? handleSwapTeamB : handleSwapTeamA
+                  }
+                />
+              </View>
 
-          {/* Center Team Swap Button */}
-          <View className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
-            <SwapButton direction="horizontal" onPress={handleSwapTeams} />
-          </View>
+              {/* Right Side Player Swap Button */}
+              <View className="absolute right-8 top-1/2 -translate-y-1/2 z-10">
+                <SwapButton
+                  direction="vertical"
+                  onPress={
+                    teamSwapped.current ? handleSwapTeamA : handleSwapTeamB
+                  }
+                />
+              </View>
+
+              {/* Center Team Swap Button */}
+              <View className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
+                <SwapButton direction="horizontal" onPress={handleSwapTeams} />
+              </View>
+
+              {/* Swap Server Button */}
+              <View className="absolute left-1/2 -bottom-6 -translate-x-1/2 z-10">
+                <TouchableOpacity
+                  onPress={() => {
+                    swapServerButtonRotation.value = withTiming(
+                      swapServerButtonRotation.value + 180,
+                      {
+                        duration: 300,
+                      }
+                    );
+                    onSwapServer();
+                  }}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    backgroundColor: "#1b373dcf",
+                    borderRadius: 50,
+                    padding: 5,
+                    opacity: 1,
+                    elevation: 15,
+                    shadowColor: "#000",
+                    shadowOffset: { width: 0, height: 6 },
+                    shadowOpacity: 0.7,
+                    shadowRadius: 4,
+                  }}
+                  activeOpacity={0.6}
+                >
+                  <View
+                    style={{
+                      position: "relative",
+                      width: 35,
+                      height: 35,
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    {/* Circular arrows */}
+                    <Animated.View
+                      style={[
+                        {
+                          position: "absolute",
+                          // zIndex: 1,
+                          opacity: 0.5,
+                        },
+                        swapServerButtonStyle,
+                      ]}
+                    >
+                      <MaterialCommunityIcons
+                        name="autorenew"
+                        size={35}
+                        color="#fff"
+                      />
+                    </Animated.View>
+                    {/* Shuttlecock icon */}
+                    <MaterialCommunityIcons
+                      name="badminton"
+                      size={14}
+                      color="#fff"
+                      style={{
+                        position: "absolute",
+                        // zIndex: 2,
+                        opacity: 0.8,
+                      }}
+                    />
+                  </View>
+                </TouchableOpacity>
+              </View>
+            </>
+          )}
 
           {/* Top row */}
           <View className="flex-1 flex-row">
             <Animated.View
-              className="flex-1 mr-1 items-center justify-center"
-              style={[leftTeamStyle, leftTopStyle]}
+              className="flex-1 mr-40 items-center justify-center"
+              style={[teamAPlayer1Style]}
             >
-              <Text className="text-white text-sm font-semibold">
-                {leftTeam.top}
-                {server === "A" && serverIndex === 1 ? " (Serving)" : ""}
-              </Text>
+              <View style={{ flexDirection: "row", alignItems: "center" }}>
+                <MaterialCommunityIcons
+                  name="account-circle"
+                  size={22}
+                  color="#fff"
+                  style={{ marginRight: 8 }}
+                />
+                <Text className="text-white text-lg font-semibold">
+                  {teamA.player1Name}
+                </Text>
+              </View>
             </Animated.View>
             <Animated.View
               className="flex-1 items-center justify-center"
-              style={[rightTeamStyle, rightTopStyle]}
+              style={[teamBPlayer1Style]}
             >
-              <Text className="text-white text-sm font-semibold">
-                {rightTeam.top}
-                {server === "B" && serverIndex === 0 ? " (Serving)" : ""}
-              </Text>
+              <View style={{ flexDirection: "row", alignItems: "center" }}>
+                <MaterialCommunityIcons
+                  name="account-circle"
+                  size={22}
+                  color="#fff"
+                  style={{ marginRight: 8 }}
+                />
+                <Text className="text-white text-lg font-semibold">
+                  {teamB.player1Name}
+                </Text>
+              </View>
             </Animated.View>
           </View>
 
           {/* Bottom row */}
           <View className="flex-1 flex-row">
             <Animated.View
-              className="flex-1 mr-1 items-center justify-center"
-              style={[leftTeamStyle, leftBottomStyle]}
+              className="flex-1 mr-40 items-center justify-center"
+              style={[teamAPlayer2Style]}
             >
-              <Text className="text-white text-sm font-semibold">
-                {leftTeam.bottom}
-                {server === "A" && serverIndex === 0 ? " (Serving)" : ""}
-              </Text>
+              <View style={{ flexDirection: "row", alignItems: "center" }}>
+                <MaterialCommunityIcons
+                  name="account-circle"
+                  size={22}
+                  color="#fff"
+                  style={{ marginRight: 8 }}
+                />
+                <Text className="text-white text-lg font-semibold">
+                  {teamA.player2Name}
+                </Text>
+              </View>
             </Animated.View>
+
             <Animated.View
               className="flex-1 items-center justify-center"
-              style={[rightTeamStyle, rightBottomStyle]}
+              style={[teamBPlayer2Style]}
             >
-              <Text className="text-white text-sm font-semibold">
-                {rightTeam.bottom}
-                {server === "B" && serverIndex === 1 ? " (Serving)" : ""}
-              </Text>
+              <View style={{ flexDirection: "row", alignItems: "center" }}>
+                <MaterialCommunityIcons
+                  name="account-circle"
+                  size={22}
+                  color="#fff"
+                  style={{ marginRight: 8 }}
+                />
+                <Text className="text-white text-lg font-semibold">
+                  {teamB.player2Name}
+                </Text>
+              </View>
             </Animated.View>
           </View>
         </View>

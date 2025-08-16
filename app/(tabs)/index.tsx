@@ -14,9 +14,12 @@ export default function HomeScreen() {
   const getCurrentSession = useSessionStore((state) => state.getCurrentSession);
   const currentSession = getCurrentSession();
 
-  const handleStartSession = (selectedPlayerIds: string[]) => {
+  const handleStartSession = (
+    selectedPlayerIds: string[],
+    selectedDuoIds: string[]
+  ) => {
     setModalVisible(false);
-    const newSession = addSession(selectedPlayerIds);
+    const newSession = addSession(selectedPlayerIds, selectedDuoIds);
     router.push({
       pathname: "/session",
       params: {
@@ -32,7 +35,7 @@ export default function HomeScreen() {
     .map((player) => player.id);
 
   return (
-    <ScrollView className="flex-1 bg-app-black">
+    <ScrollView className="flex-1 bg-app-background">
       <View className="p-5">
         <View className="items-center mb-12 mt-5">
           <Text className="text-5xl text-white font-800 text-center tracking-tight">
@@ -65,17 +68,7 @@ export default function HomeScreen() {
         <View className="space-y-3">
           <Text className="text-white text-xl font-bold mb-2">Top Players</Text>
           {topPlayerIds?.map((playerId) => (
-            <TouchableOpacity
-              key={playerId}
-              onPress={() =>
-                router.push({
-                  pathname: "/player",
-                  params: { playerId },
-                })
-              }
-            >
-              <PlayerCard id={playerId} />
-            </TouchableOpacity>
+            <PlayerCard key={playerId} id={playerId} />
           ))}
         </View>
       </View>

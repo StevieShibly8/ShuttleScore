@@ -19,7 +19,8 @@ export default function RootLayout() {
       <SafeAreaView className="flex-1 bg-black">
         <Stack>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="game" options={{ headerShown: false }} />
+          <Stack.Screen name="currentGame" options={{ headerShown: false }} />
+          <Stack.Screen name="pastGame" options={{ headerShown: false }} />
           <Stack.Screen name="session" options={{ headerShown: false }} />
           <Stack.Screen name="+not-found" />
         </Stack>

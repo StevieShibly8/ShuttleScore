@@ -1,5 +1,5 @@
-import { TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { TouchableOpacity } from "react-native";
 
 interface SwapButtonProps {
   direction: "horizontal" | "vertical";
@@ -8,31 +8,35 @@ interface SwapButtonProps {
 
 export default function SwapButton({ direction, onPress }: SwapButtonProps) {
   const isHorizontal = direction === "horizontal";
-  
+
   return (
-    <TouchableOpacity 
-      className={`rounded-lg p-4 ${
-        isHorizontal ? "flex-row" : "flex-col"
-      } items-center`}
+    <TouchableOpacity
+      className={`rounded-lg p-4 items-center ${isHorizontal ? "flex-row" : "flex-col"}`}
       onPress={onPress}
-      activeOpacity={0.7}
+      activeOpacity={0.4}
       hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
-      style={{ zIndex: 999 }}
+      style={{
+        // zIndex: 999,
+        backgroundColor: "#1b373dcf",
+        opacity: 1,
+        padding: 5,
+        borderRadius: 15,
+        elevation: 15,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.7,
+        shadowRadius: 4,
+      }}
     >
-      {isHorizontal ? (
-        <>
-          <Ionicons name="repeat-outline" size={36} color="darkgreen" />
-        </>
-      ) : (
-        <>
-          <Ionicons 
-            name="repeat-outline" 
-            size={36} 
-            color="darkgreen"
-            style={{transform: [{rotate: '90deg'}]}}
-          />
-        </>
-      )}
+      <Ionicons
+        name="repeat-outline"
+        size={30}
+        color="#fff"
+        style={{
+          transform: [{ rotate: isHorizontal ? "0deg" : "90deg" }],
+          opacity: 0.6,
+        }}
+      />
     </TouchableOpacity>
   );
 }
