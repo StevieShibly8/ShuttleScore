@@ -68,17 +68,7 @@ export default function HomeScreen() {
         <View className="space-y-3">
           <Text className="text-white text-xl font-bold mb-2">Top Players</Text>
           {topPlayerIds?.map((playerId) => (
-            <TouchableOpacity
-              key={playerId}
-              onPress={() =>
-                router.push({
-                  pathname: "/playerProfile",
-                  params: { playerId },
-                })
-              }
-            >
-              <PlayerCard id={playerId} />
-            </TouchableOpacity>
+            <PlayerCard key={playerId} id={playerId} />
           ))}
         </View>
       </View>

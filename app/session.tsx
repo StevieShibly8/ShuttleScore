@@ -111,16 +111,12 @@ export default function SessionScreen() {
                 <Text className="text-white text-xl font-bold mb-4">
                   Current Game
                 </Text>
-                <TouchableOpacity
-                  onPress={() =>
-                    router.push({
-                      pathname: "/currentGame",
-                      params: { sessionId },
-                    })
-                  }
-                >
-                  <GameCard game={session.currentGame} />
-                </TouchableOpacity>
+                <GameCard
+                  key={session.currentGame.id}
+                  gameId={session.currentGame.id}
+                  sessionId={sessionId as string}
+                  isActive={true}
+                />
               </View>
             )}
           </>
@@ -140,22 +136,12 @@ export default function SessionScreen() {
                 const played = session?.gamesPlayedPerPlayer[playerId] ?? 0;
                 const losses = played - wins;
                 return (
-                  <TouchableOpacity
+                  <PlayerCard
                     key={playerId}
-                    onPress={() =>
-                      router.push({
-                        pathname: "/playerProfile",
-                        params: { playerId },
-                      })
-                    }
-                  >
-                    <PlayerCard
-                      id={playerId}
-                      wins={wins}
-                      losses={losses}
-                      played={played}
-                    />
-                  </TouchableOpacity>
+                    id={playerId}
+                    wins={wins}
+                    losses={losses}
+                  />
                 );
               })}
           </View>
@@ -175,22 +161,7 @@ export default function SessionScreen() {
                 const played = session?.gamesPlayedPerDuo[duoId] ?? 0;
                 const losses = played - wins;
                 return (
-                  <TouchableOpacity
-                    key={duoId}
-                    onPress={() =>
-                      router.push({
-                        pathname: "/duoProfile",
-                        params: { duoId },
-                      })
-                    }
-                  >
-                    <DuoCard
-                      id={duoId}
-                      wins={wins}
-                      losses={losses}
-                      played={played}
-                    />
-                  </TouchableOpacity>
+                  <DuoCard key={duoId} id={duoId} wins={wins} losses={losses} />
                 );
               })}
           </View>
@@ -206,17 +177,12 @@ export default function SessionScreen() {
             </View>
           ) : (
             pastGames.map((game) => (
-              <TouchableOpacity
+              <GameCard
                 key={game.id}
-                onPress={() =>
-                  router.push({
-                    pathname: "/pastGame",
-                    params: { sessionId, gameId: game.id },
-                  })
-                }
-              >
-                <GameCard game={game} />
-              </TouchableOpacity>
+                gameId={game.id}
+                sessionId={sessionId as string}
+                isActive={false}
+              />
             ))
           )}
         </View>
