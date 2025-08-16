@@ -1,5 +1,6 @@
 import { DuoCard } from "@/components/DuoCard";
 import { GameCard } from "@/components/GameCard";
+import ModalPopup from "@/components/ModalPopup";
 import { PlayerCard } from "@/components/PlayerCard";
 import StartGameModal from "@/components/StartGameModal";
 import { Duo } from "@/data/duoData";
@@ -20,6 +21,7 @@ export default function SessionScreen() {
   const endSession = useSessionStore((state) => state.endSession);
 
   const [modalVisible, setModalVisible] = useState(false);
+  const [showEndSessionModal, setShowEndSessionModal] = useState(false);
 
   const session = getSessionById(sessionId as string);
   const pastGames = session?.pastGames;
@@ -64,16 +66,34 @@ export default function SessionScreen() {
             <Ionicons name="arrow-back" size={28} color="#fff" />
           </TouchableOpacity>
           <Text className="text-3xl text-white font-800 flex-1">Home</Text>
-          <TouchableOpacity
-            className="bg-app-danger py-4 px-4 rounded-xl-plus items-center shadow-lg"
-            onPress={() => {
-              endSession(sessionId as string);
-              router.navigate("/sessions");
-            }}
-          >
-            <Text className="text-white font-bold">End Session</Text>
-          </TouchableOpacity>
+          {session?.isSessionActive && (
+            <TouchableOpacity
+              className="bg-app-danger py-4 px-4 rounded-xl-plus items-center shadow-lg"
+              onPress={() => {
+                setShowEndSessionModal(true);
+              }}
+            >
+              <Text className="text-white font-bold">End Session</Text>
+            </TouchableOpacity>
+          )}
         </View>
+
+        {/* Quit Confirmation Popup */}
+        <ModalPopup
+          visible={showEndSessionModal}
+          messageTitle="End Session?"
+          messageBody="The current session will be ended and you will be rerouted to the Sessions page. This action cannot be undone."
+          cancelText="Cancel"
+          confirmText="End"
+          cancelButtonColor="#444"
+          confirmButtonColor="#921721bc"
+          onCancel={() => setShowEndSessionModal(false)}
+          onConfirm={() => {
+            setShowEndSessionModal(false);
+            endSession(sessionId as string);
+            router.replace("/sessions");
+          }}
+        />
 
         {session?.isSessionActive && (
           <>

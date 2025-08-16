@@ -1,5 +1,5 @@
 import BadmintonCourt from "@/components/BadmintonCourt";
-import QuitConfirmPopup from "@/components/QuitConfirmPopup";
+import ModalPopup from "@/components/ModalPopup";
 import { Scoreboard } from "@/components/Scoreboard";
 import { useDuoStore } from "@/stores/duoStore";
 import { usePlayerStore } from "@/stores/playerStore";
@@ -10,7 +10,6 @@ import * as ScreenOrientation from "expo-screen-orientation";
 import { useEffect, useState } from "react";
 import { Text, TouchableOpacity, View } from "react-native";
 import Animated, {
-  runOnJS,
   useAnimatedStyle,
   useSharedValue,
   withTiming,
@@ -26,7 +25,7 @@ export default function GameScreen() {
   const updatePlayer = usePlayerStore((state) => state.updatePlayer);
   const updateDuo = useDuoStore((state) => state.updateDuo);
 
-  const [showQuitConfirm, setShowQuitConfirm] = useState(false);
+  const [showQuitGameModal, setShowQuitGameModal] = useState(false);
 
   useEffect(() => {
     ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE);
@@ -34,28 +33,6 @@ export default function GameScreen() {
       ScreenOrientation.unlockAsync();
     };
   }, []);
-
-  const leftScoreboardX = useSharedValue(0);
-  const rightScoreboardX = useSharedValue(0);
-
-  const leftScoreboardStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: leftScoreboardX.value }],
-  }));
-
-  const rightScoreboardStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: rightScoreboardX.value }],
-  }));
-
-  const [isSwapped, setIsSwapped] = useState(false);
-  const handleSwapTeams = () => {
-    leftScoreboardX.value = withTiming(-400, { duration: 250 });
-    rightScoreboardX.value = withTiming(400, { duration: 250 }, () => {
-      // Swap teams after out animation
-      runOnJS(setIsSwapped)(!isSwapped);
-      leftScoreboardX.value = withTiming(0, { duration: 250 });
-      rightScoreboardX.value = withTiming(0, { duration: 250 });
-    });
-  };
 
   const game = useSessionStore((state) =>
     state.getCurrentGame(sessionId as string)
@@ -83,9 +60,45 @@ export default function GameScreen() {
     ? getPlayerById(duoB.playerIds[1])
     : undefined;
 
-  const [server, setServer] = useState<"A" | "B">("A");
-  const handleSwapServer = () =>
-    setServer((prev) => (prev === "A" ? "B" : "A"));
+  const leftScoreboardX = useSharedValue(0);
+  const rightScoreboardX = useSharedValue(0);
+
+  const leftScoreboardStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: leftScoreboardX.value }],
+  }));
+
+  const rightScoreboardStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: rightScoreboardX.value }],
+  }));
+
+  const isTeamSwapped = game?.isTeamSwapped ?? false;
+  const handleSwapTeams = () => {
+    if (!game) return;
+    leftScoreboardX.value = withTiming(-400, { duration: 250 });
+    rightScoreboardX.value = withTiming(400, { duration: 250 }, () => {
+      leftScoreboardX.value = withTiming(0, { duration: 250 });
+      rightScoreboardX.value = withTiming(0, { duration: 250 });
+    });
+    updateSession(sessionId as string, {
+      currentGame: {
+        ...game,
+        isTeamSwapped: !isTeamSwapped,
+        server: game.server === "A" ? "B" : "A", // keep this to keep shuttlecock on same side
+      },
+    });
+  };
+
+  const server = game?.server ?? "A";
+
+  const handleSwapServer = () => {
+    if (!game) return;
+    updateSession(sessionId as string, {
+      currentGame: {
+        ...game,
+        server: game.server === "A" ? "B" : "A",
+      },
+    });
+  };
 
   // Server index: even points = right court (0), odd = left court (1)
   const servingScore = server === "A" ? scoreA : scoreB;
@@ -102,37 +115,79 @@ export default function GameScreen() {
   const handleScoreA = () => {
     if (isGameComplete) return;
     if (!gameStarted) setGameStarted(true);
-    if (server !== "A") setServer("A");
-
     if (!game) return;
 
-    updateSession(sessionId as string, {
-      currentGame: {
-        ...game,
-        teamA: {
-          ...game.teamA,
-          score: scoreA + 1,
+    const newUndo: ("A" | "B")[] = [...(game.undoqueue ?? []), "A"];
+    const isFirstScore = (game.undoqueue?.length ?? 0) === 0;
+    const initialServer = isFirstScore ? server : game.initialServer;
+    // Clear redoqueue on new action
+    if (server !== "A") {
+      updateSession(sessionId as string, {
+        currentGame: {
+          ...game,
+          server: "A",
+          teamA: {
+            ...game.teamA,
+            score: scoreA + 1,
+          },
+          undoqueue: newUndo,
+          redoqueue: [],
+          initialServer,
         },
-      },
-    });
+      });
+    } else {
+      updateSession(sessionId as string, {
+        currentGame: {
+          ...game,
+          teamA: {
+            ...game.teamA,
+            score: scoreA + 1,
+          },
+          undoqueue: newUndo,
+          redoqueue: [],
+          initialServer,
+        },
+      });
+    }
   };
 
   const handleScoreB = () => {
     if (isGameComplete) return;
     if (!gameStarted) setGameStarted(true);
-    if (server !== "B") setServer("B");
-
     if (!game) return;
 
-    updateSession(sessionId as string, {
-      currentGame: {
-        ...game,
-        teamB: {
-          ...game.teamB,
-          score: scoreB + 1,
+    const newUndo: ("A" | "B")[] = [...(game.undoqueue ?? []), "B"];
+    const isFirstScore = (game.undoqueue?.length ?? 0) === 0;
+    const initialServer = isFirstScore ? server : game.initialServer;
+    // Clear redoqueue on new action
+    if (server !== "B") {
+      updateSession(sessionId as string, {
+        currentGame: {
+          ...game,
+          server: "B",
+          teamB: {
+            ...game.teamB,
+            score: scoreB + 1,
+          },
+          undoqueue: newUndo,
+          redoqueue: [],
+          initialServer,
         },
-      },
-    });
+      });
+    } else {
+      updateSession(sessionId as string, {
+        currentGame: {
+          ...game,
+          teamB: {
+            ...game.teamB,
+            score: scoreB + 1,
+          },
+          undoqueue: newUndo,
+          redoqueue: [],
+          initialServer,
+        },
+      });
+    }
   };
 
   const updateDuoStats = () => {
@@ -242,6 +297,62 @@ export default function GameScreen() {
     });
   };
 
+  const handleUndo = () => {
+    if (!game || !game.undoqueue || game.undoqueue.length === 0) return;
+    const undoqueue = game.undoqueue;
+    const last = undoqueue[undoqueue.length - 1];
+    const secondLast =
+      undoqueue.length > 1 ? undoqueue[undoqueue.length - 2] : undefined;
+
+    let newServer: "A" | "B";
+    if (undoqueue.length === 1) {
+      newServer = game.initialServer ?? "A";
+    } else if (last === secondLast) {
+      newServer = last;
+    } else {
+      newServer = secondLast ?? game.initialServer ?? "A";
+    }
+
+    let newTeamA = { ...game.teamA };
+    let newTeamB = { ...game.teamB };
+    if (last === "A" && newTeamA.score > 0) newTeamA.score -= 1;
+    if (last === "B" && newTeamB.score > 0) newTeamB.score -= 1;
+
+    if (undoqueue.length === 1) setGameStarted(false);
+
+    updateSession(sessionId as string, {
+      currentGame: {
+        ...game,
+        teamA: newTeamA,
+        teamB: newTeamB,
+        server: newServer,
+        undoqueue: undoqueue.slice(0, -1),
+        redoqueue: [...(game.redoqueue ?? []), last],
+      },
+    });
+  };
+
+  const handleRedo = () => {
+    if (!game || !game.redoqueue || game.redoqueue.length === 0) return;
+    if (!gameStarted) setGameStarted(true);
+    const last = game.redoqueue[game.redoqueue.length - 1];
+    let newTeamA = { ...game.teamA };
+    let newTeamB = { ...game.teamB };
+    if (last === "A") newTeamA.score += 1;
+    if (last === "B") newTeamB.score += 1;
+
+    updateSession(sessionId as string, {
+      currentGame: {
+        ...game,
+        teamA: newTeamA,
+        teamB: newTeamB,
+        server: last,
+        undoqueue: [...(game.undoqueue ?? []), last],
+        redoqueue: game.redoqueue.slice(0, -1),
+      },
+    });
+  };
+
   if (!game) {
     return (
       <View className="flex-1 items-center justify-center bg-app-background">
@@ -262,30 +373,67 @@ export default function GameScreen() {
     <View className="flex-1 bg-app-background p-5">
       {/* Header */}
       <View className="flex-row items-center mb-2">
+        {/* Back Button */}
         <TouchableOpacity onPress={() => router.back()} className="mr-3 p-1">
           <Ionicons name="arrow-back" size={28} color="#fff" />
         </TouchableOpacity>
         <Text className="text-3xl text-white font-800 flex-1">Session</Text>
+
+        <View style={{ flexDirection: "row", gap: 16 }}>
+          {/* Undo Button */}
+          <TouchableOpacity
+            onPress={handleUndo}
+            className="bg-app-secondary py-2 px-4 rounded-xl-plus"
+            disabled={!game?.undoqueue?.length}
+            style={{
+              opacity: !game?.undoqueue?.length ? 0.2 : 1,
+            }}
+          >
+            <Ionicons
+              name="arrow-undo"
+              size={22}
+              color={!game?.undoqueue?.length ? "#bbb" : "#fff"}
+            />
+          </TouchableOpacity>
+          {/* Redo Button */}
+          <TouchableOpacity
+            onPress={handleRedo}
+            className="bg-app-secondary py-2 px-4 rounded-xl-plus"
+            disabled={!game?.redoqueue?.length}
+            style={{
+              opacity: !game?.redoqueue?.length ? 0.2 : 1,
+            }}
+          >
+            <Ionicons
+              name="arrow-redo"
+              size={22}
+              color={!game?.redoqueue?.length ? "#bbb" : "#fff"}
+            />
+          </TouchableOpacity>
+        </View>
+
+        {/* Quit Game Button */}
         <TouchableOpacity
-          onPress={() => setShowQuitConfirm(true)}
-          className="bg-app-danger py-4 px-4 rounded-xl-plus items-center shadow-lg"
+          onPress={() => setShowQuitGameModal(true)}
+          className="bg-app-danger py-4 px-4 ml-16 rounded-xl-plus items-center shadow-lg"
         >
           <Text className="text-white font-bold">Quit Game</Text>
         </TouchableOpacity>
       </View>
 
       {/* Quit Confirmation Popup */}
-      <QuitConfirmPopup
-        visible={showQuitConfirm}
-        messageTitle="Are you sure you want to quit the game?"
-        messageBody="Your progress will be lost!"
+      <ModalPopup
+        visible={showQuitGameModal}
+        messageTitle="Quit Game?"
+        messageBody="Your progress will be lost! Are you sure you want to quit the game?"
         cancelText="Cancel"
         confirmText="Quit"
         cancelButtonColor="#444"
         confirmButtonColor="#921721bc"
-        onCancel={() => setShowQuitConfirm(false)}
-        onQuit={() => {
-          setShowQuitConfirm(false);
+        // icon={<Ionicons name="alert-circle" size={40} color="#ff3333" />}
+        onCancel={() => setShowQuitGameModal(false)}
+        onConfirm={() => {
+          setShowQuitGameModal(false);
           endCurrentGame(sessionId as string, isGameComplete);
           router.back();
         }}
@@ -296,9 +444,9 @@ export default function GameScreen() {
         {/* Left Scoreboard */}
         <Animated.View style={[leftScoreboardStyle]} className="mr-2">
           <Scoreboard
-            teamName={isSwapped ? "Team B" : "Team A"}
-            score={isSwapped ? scoreB : scoreA}
-            onScore={() => (isSwapped ? handleScoreB : handleScoreA)()}
+            teamName={isTeamSwapped ? "Team B" : "Team A"}
+            score={isTeamSwapped ? scoreB : scoreA}
+            onScore={() => (isTeamSwapped ? handleScoreB : handleScoreA)()}
             disabled={isGameComplete}
           />
         </Animated.View>
@@ -306,6 +454,7 @@ export default function GameScreen() {
         {/* Badminton Court */}
         <View className="flex-1">
           <BadmintonCourt
+            sessionId={sessionId as string}
             teamA={{
               player1Name: teamAPlayer1?.name ?? "",
               player2Name: teamAPlayer2?.name ?? "",
@@ -317,6 +466,7 @@ export default function GameScreen() {
             server={server}
             serverIndex={serverIndex}
             gameStarted={gameStarted}
+            isTeamSwapped={isTeamSwapped}
             onSwapTeams={handleSwapTeams}
             onSwapServer={handleSwapServer}
           />
@@ -325,74 +475,37 @@ export default function GameScreen() {
         {/* Right Scoreboard */}
         <Animated.View style={[rightScoreboardStyle]} className="ml-2">
           <Scoreboard
-            teamName={isSwapped ? "Team A" : "Team B"}
-            score={isSwapped ? scoreA : scoreB}
-            onScore={() => (isSwapped ? handleScoreA : handleScoreB)()}
+            teamName={isTeamSwapped ? "Team A" : "Team B"}
+            score={isTeamSwapped ? scoreA : scoreB}
+            onScore={() => (isTeamSwapped ? handleScoreA : handleScoreB)()}
             disabled={isGameComplete}
           />
         </Animated.View>
       </View>
 
-      {/* Game Complete Overlay */}
-      {isGameComplete && (
-        <View
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: "rgba(0,0,0,0.7)",
-            justifyContent: "center",
-            alignItems: "center",
-            zIndex: 2000,
-          }}
-        >
-          <View
-            style={{
-              backgroundColor: "#222",
-              padding: 32,
-              borderRadius: 16,
-              alignItems: "center",
-              minWidth: 280,
-            }}
-          >
-            <Text
-              style={{
-                color: "#fff",
-                fontSize: 22,
-                fontWeight: "bold",
-                marginBottom: 20,
-              }}
-            >
-              Game Complete!
-            </Text>
-            <TouchableOpacity
-              onPress={() => {
-                updateDuoStats();
-                updatePlayerStats();
-                updateSessionStats();
-                endCurrentGame(sessionId as string, isGameComplete);
-                router.replace({
-                  pathname: "/pastGame",
-                  params: { sessionId, gameId: game.id },
-                });
-              }}
-              style={{
-                backgroundColor: "#4ade80",
-                paddingVertical: 12,
-                paddingHorizontal: 40,
-                borderRadius: 8,
-                marginTop: 10,
-              }}
-            >
-              <Text style={{ color: "#fff", fontSize: 18, fontWeight: "bold" }}>
-                Continue
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      )}
+      {/* Game Complete Modal */}
+      <ModalPopup
+        visible={isGameComplete}
+        messageTitle="Game Complete!"
+        messageBody={`Winner: ${
+          scoreA > scoreB
+            ? teamAPlayer1?.name + " & " + teamAPlayer2?.name
+            : teamBPlayer1?.name + " & " + teamBPlayer2?.name
+        }`}
+        confirmText="Continue"
+        confirmButtonColor="#6c935c"
+        icon={<Ionicons name="trophy" size={60} color="#F59E0B" />}
+        onConfirm={() => {
+          updateDuoStats();
+          updatePlayerStats();
+          updateSessionStats();
+          endCurrentGame(sessionId as string, isGameComplete);
+          router.replace({
+            pathname: "/pastGame",
+            params: { sessionId, gameId: game.id },
+          });
+        }}
+      />
     </View>
   );
 }

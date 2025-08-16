@@ -16,7 +16,7 @@ export default function SwapButton({ direction, onPress }: SwapButtonProps) {
       activeOpacity={0.4}
       hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
       style={{
-        zIndex: 999,
+        // zIndex: 999,
         backgroundColor: "#1b373dcf",
         opacity: 1,
         padding: 5,

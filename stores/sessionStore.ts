@@ -70,11 +70,18 @@ const sessionStoreCreator: StateCreator<SessionStore> = (set, get) => ({
   getCurrentSession: () =>
     get().sessions.find((s: Session) => s.isSessionActive),
   addGameToSession: (sessionId: string, teamA: Team, teamB: Team) => {
-    const newGame = {
+    const newGame: Game = {
       id: uuid.v4() as string,
       teamA,
       teamB,
+      isTeamSwapped: false,
+      isTeamASwapped: false,
+      isTeamBSwapped: false,
+      server: "A",
+      initialServer: "A",
       isGameActive: true,
+      undoqueue: [],
+      redoqueue: [],
     };
     get().updateSession(sessionId, { currentGame: newGame });
     return newGame;

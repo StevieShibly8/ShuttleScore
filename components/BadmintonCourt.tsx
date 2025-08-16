@@ -1,3 +1,4 @@
+import { useSessionStore } from "@/stores/sessionStore";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useEffect, useRef } from "react";
 import { Text, TouchableOpacity, View } from "react-native";
@@ -9,46 +10,31 @@ import Animated, {
 import SwapButton from "./SwapButton";
 
 interface BadmintonCourtProps {
+  sessionId: string;
   teamA: { player1Name: string; player2Name: string };
   teamB: { player1Name: string; player2Name: string };
   server: "A" | "B";
   serverIndex: number;
   gameStarted: boolean;
+  isTeamSwapped: boolean;
   onSwapTeams: () => void;
   onSwapServer: () => void;
 }
 
 export default function BadmintonCourt({
+  sessionId,
   teamA,
   teamB,
   server,
   serverIndex,
   gameStarted,
+  isTeamSwapped,
   onSwapTeams,
   onSwapServer,
 }: BadmintonCourtProps) {
-  // Track previous server to detect changes
-  const prevServer = useRef<"A" | "B" | null>(null);
-  const prevServerIndex = useRef<number | null>(null);
-
-  useEffect(() => {
-    if (prevServer.current !== null && prevServerIndex.current !== null) {
-      // Only trigger swap if server stays the same and serverIndex changes
-      if (
-        prevServer.current === server &&
-        prevServerIndex.current !== serverIndex
-      ) {
-        if (server === "A") {
-          handleSwapTeamA();
-        } else if (server === "B") {
-          handleSwapTeamB();
-        }
-      }
-    }
-    prevServer.current = server;
-    prevServerIndex.current = serverIndex;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [server, serverIndex]);
+  const getCurrentGame = useSessionStore((state) => state.getCurrentGame);
+  const updateSession = useSessionStore((state) => state.updateSession);
+  const currentGame = getCurrentGame(sessionId as string);
 
   useEffect(() => {
     const { x, y } = getShuttlecockTargetPosition(server, serverIndex);
@@ -70,9 +56,53 @@ export default function BadmintonCourt({
   const shuttlecockY = useSharedValue(0);
   const swapServerButtonRotation = useSharedValue(0);
 
+  const isTeamASwapped = currentGame?.isTeamASwapped ?? false;
+  const isTeamBSwapped = currentGame?.isTeamBSwapped ?? false;
   const teamASwapped = useRef(false);
   const teamBSwapped = useRef(false);
   const teamSwapped = useRef(false);
+  const didInit = useRef(false);
+
+  useEffect(() => {
+    if (!didInit.current) {
+      // Horizontal swap
+      if (isTeamSwapped) {
+        teamAPlayer1TranslateX.value = 310;
+        teamAPlayer2TranslateX.value = 310;
+        teamBPlayer1TranslateX.value = -310;
+        teamBPlayer2TranslateX.value = -310;
+        teamSwapped.current = true;
+      } else {
+        teamAPlayer1TranslateX.value = 0;
+        teamAPlayer2TranslateX.value = 0;
+        teamBPlayer1TranslateX.value = 0;
+        teamBPlayer2TranslateX.value = 0;
+        teamSwapped.current = false;
+      }
+      // Vertical swap for Team A
+      if (isTeamASwapped) {
+        teamAPlayer1TranslateY.value = 115;
+        teamAPlayer2TranslateY.value = -115;
+        teamASwapped.current = true;
+      } else {
+        teamAPlayer1TranslateY.value = 0;
+        teamAPlayer2TranslateY.value = 0;
+        teamASwapped.current = false;
+      }
+      // Vertical swap for Team B
+      if (isTeamBSwapped) {
+        teamBPlayer1TranslateY.value = 115;
+        teamBPlayer2TranslateY.value = -115;
+        teamBSwapped.current = true;
+      } else {
+        teamBPlayer1TranslateY.value = 0;
+        teamBPlayer2TranslateY.value = 0;
+        teamBSwapped.current = false;
+      }
+      didInit.current = true;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isTeamSwapped, isTeamASwapped, isTeamBSwapped]);
 
   // Animated styles using transforms
   const teamAPlayer1Style = useAnimatedStyle(() => ({
@@ -161,6 +191,7 @@ export default function BadmintonCourt({
 
   // Swap functions with slide animations
   const handleSwapTeamA = () => {
+    if (!currentGame) return;
     animateVerticalSwap(
       teamAPlayer1TranslateY,
       teamAPlayer2TranslateY,
@@ -168,9 +199,17 @@ export default function BadmintonCourt({
       teamASwapped.current
     );
     teamASwapped.current = !teamASwapped.current;
+    updateSession(sessionId as string, {
+      currentGame: {
+        ...currentGame,
+        isTeamASwapped: teamASwapped.current,
+      },
+    });
   };
 
   const handleSwapTeamB = () => {
+    if (!currentGame) return;
+
     animateVerticalSwap(
       teamBPlayer1TranslateY,
       teamBPlayer2TranslateY,
@@ -178,6 +217,12 @@ export default function BadmintonCourt({
       teamBSwapped.current
     );
     teamBSwapped.current = !teamBSwapped.current;
+    updateSession(sessionId as string, {
+      currentGame: {
+        ...currentGame,
+        isTeamBSwapped: teamBSwapped.current,
+      },
+    });
   };
 
   const handleSwapTeams = () => {
@@ -197,11 +242,15 @@ export default function BadmintonCourt({
     server: "A" | "B",
     serverIndex: number
   ) {
-    // Adjust these values to match your court layout
-    if (server === "A" && serverIndex === 0) return { x: 130, y: 130 }; // Bottom left
-    if (server === "A" && serverIndex === 1) return { x: 130, y: 75 }; // Top left
-    if (server === "B" && serverIndex === 0) return { x: 340, y: 75 }; // Top right
-    if (server === "B" && serverIndex === 1) return { x: 340, y: 130 }; // Bottom right
+    let visualServer = server;
+    if (isTeamSwapped) {
+      visualServer = server === "A" ? "B" : "A";
+    }
+
+    if (visualServer === "A" && serverIndex === 0) return { x: 130, y: 130 }; // Bottom left
+    if (visualServer === "A" && serverIndex === 1) return { x: 130, y: 75 }; // Top left
+    if (visualServer === "B" && serverIndex === 0) return { x: 340, y: 75 }; // Top right
+    if (visualServer === "B" && serverIndex === 1) return { x: 340, y: 130 }; // Bottom right
     return { x: 130, y: 75 };
   }
 
@@ -311,7 +360,7 @@ export default function BadmintonCourt({
                       style={[
                         {
                           position: "absolute",
-                          zIndex: 1,
+                          // zIndex: 1,
                           opacity: 0.5,
                         },
                         swapServerButtonStyle,
@@ -330,7 +379,7 @@ export default function BadmintonCourt({
                       color="#fff"
                       style={{
                         position: "absolute",
-                        zIndex: 2,
+                        // zIndex: 2,
                         opacity: 0.8,
                       }}
                     />
