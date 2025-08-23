@@ -1,5 +1,6 @@
 import { useDuoStore } from "@/stores/duoStore";
 import { usePlayerStore } from "@/stores/playerStore";
+import { useSessionStore } from "@/stores/sessionStore";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useState } from "react";
 import {
@@ -11,13 +12,9 @@ import {
   View,
 } from "react-native";
 
-interface StartSessionModalProps {
+interface AddPlayersModalProps {
   visible: boolean;
   onClose: () => void;
-  onStartSession: (
-    selectedPlayerIds: string[],
-    selectedDuoIds: string[]
-  ) => void;
 }
 
 const PlayerRow = ({
@@ -52,139 +49,73 @@ const PlayerRow = ({
   </TouchableOpacity>
 );
 
-const AddPlayerRow = ({
-  show,
-  value,
-  onChange,
-  onAdd,
-  onCancel,
-  onShow,
-  onInputFocus,
-  onInputBlur,
-}: {
-  show: boolean;
-  value: string;
-  onChange: (text: string) => void;
-  onAdd: () => void;
-  onCancel: () => void;
-  onShow: () => void;
-  onInputFocus?: () => void;
-  onInputBlur?: () => void;
-}) =>
-  show ? (
-    <View className="flex-row items-center py-5 mt-2 gap-2">
-      <TextInput
-        className="flex-1 border border-app-primary rounded-lg px-3 py-2 text-base text-app-text-primary bg-app-modal-bg"
-        placeholder="Enter player name"
-        placeholderTextColor="#aaa"
-        value={value}
-        onChangeText={onChange}
-        autoFocus
-        onFocus={onInputFocus}
-        onBlur={onInputBlur}
-      />
-      <TouchableOpacity
-        className="px-4 py-2 bg-app-primary rounded-lg"
-        onPress={onAdd}
-      >
-        <Text className="text-app-white font-semibold">Add</Text>
-      </TouchableOpacity>
-      <TouchableOpacity className="px-2 py-2 ml-1" onPress={onCancel}>
-        <Text className="text-app-primary font-semibold">Cancel</Text>
-      </TouchableOpacity>
-    </View>
-  ) : (
-    <TouchableOpacity
-      className="flex-row items-center justify-center py-4 mt-2 rounded-lg border border-dashed border-app-primary"
-      onPress={onShow}
-    >
-      <Text className="text-app-primary text-base font-semibold">
-        + Add New Player
-      </Text>
-    </TouchableOpacity>
-  );
-
-export default function StartSessionModal({
+export default function AddPlayersModal({
   visible,
   onClose,
-  onStartSession,
-}: StartSessionModalProps) {
+}: AddPlayersModalProps) {
   const players = usePlayerStore((state) => state.players);
-  const addPlayer = usePlayerStore((state) => state.addPlayer);
+  const session = useSessionStore((state) => state.getCurrentSession());
+  const addPlayersToSession = useSessionStore(
+    (state) => state.addPlayersToSession
+  );
   const addDuo = useDuoStore((state) => state.addDuo);
   const getDuoById = useDuoStore((state) => state.getDuoById);
 
+  // Only show players not already in the session
+  const availablePlayers = players.filter(
+    (player) => !session?.players?.[player.id]
+  );
+
   const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>([]);
   const [selectedDuoIds, setSelectedDuoIds] = useState<string[]>([]);
-  const [showAddPlayer, setShowAddPlayer] = useState(false);
-  const [newPlayerName, setNewPlayerName] = useState("");
   const [search, setSearch] = useState("");
+
+  // Helper to get all duos between selected and existing players
+  const computeSelectedDuoIds = (selectedIds: string[]) => {
+    const currentPlayerIds = session?.players
+      ? Object.keys(session.players)
+      : [];
+    const allPlayerIds = [...currentPlayerIds, ...selectedIds];
+    const duoIds: string[] = [];
+    for (let i = 0; i < allPlayerIds.length; i++) {
+      for (let j = i + 1; j < allPlayerIds.length; j++) {
+        const sortedIds = [allPlayerIds[i], allPlayerIds[j]].sort();
+        const duoId = sortedIds.join("-");
+        let duo = getDuoById(duoId);
+        if (!duo) {
+          duo = addDuo(sortedIds);
+        }
+        duoIds.push(duo.id);
+      }
+    }
+    return duoIds;
+  };
 
   const togglePlayer = (playerId: string) => {
     setSelectedPlayerIds((prev) => {
       const newSelected = prev.includes(playerId)
         ? prev.filter((id) => id !== playerId)
         : [...prev, playerId];
-
-      // After updating selected players, update selected duos
-      setSelectedDuoIds(() => {
-        const duoIds: string[] = [];
-        // For every possible pair of selected players, check if the duo exists
-        for (let i = 0; i < newSelected.length; i++) {
-          for (let j = i + 1; j < newSelected.length; j++) {
-            const sortedIds = [newSelected[i], newSelected[j]].sort();
-            const duoId = sortedIds.join("-");
-            if (getDuoById(duoId)) {
-              duoIds.push(duoId);
-            }
-          }
-        }
-        return duoIds;
-      });
-
+      setSelectedDuoIds(computeSelectedDuoIds(newSelected));
       return newSelected;
     });
   };
 
-  const handleAddPlayer = () => {
-    if (!newPlayerName.trim()) return;
-    const newPlayer = addPlayer(newPlayerName.trim());
-
-    // Create new duos for the added player
-    players.forEach((player) => {
-      if (player.id !== newPlayer.id) {
-        const sortedPlayerIds = [newPlayer.id, player.id].sort();
-        const duoId = sortedPlayerIds.join("-");
-        if (!getDuoById(duoId)) {
-          const newDuo = addDuo(sortedPlayerIds);
-          setSelectedDuoIds((prev) => {
-            const bothSelected =
-              [...selectedPlayerIds, newPlayer.id].includes(player.id) &&
-              [...selectedPlayerIds, newPlayer.id].includes(newPlayer.id);
-            return bothSelected ? [...prev, newDuo.id] : prev;
-          });
-        }
-      }
-    });
-
-    setSelectedPlayerIds((prev) => [...prev, newPlayer.id]);
-    setNewPlayerName("");
-    setShowAddPlayer(false);
-  };
-
-  const handleStartSession = () => {
-    onStartSession(selectedPlayerIds, selectedDuoIds);
+  const handleAddPlayers = () => {
+    addPlayersToSession(selectedPlayerIds, selectedDuoIds);
     setSelectedPlayerIds([]);
     setSelectedDuoIds([]);
+    onClose();
   };
 
   const handleCancel = () => {
     setSelectedPlayerIds([]);
+    setSelectedDuoIds([]);
     onClose();
   };
 
   // Filter players by search
-  const filteredPlayers = players.filter((player) =>
+  const filteredPlayers = availablePlayers.filter((player) =>
     player.name.toLowerCase().includes(search.toLowerCase())
   );
 
@@ -199,42 +130,29 @@ export default function StartSessionModal({
       <View className="flex-1 bg-app-overlay justify-end">
         <View className="rounded-t-3xl pt-3 px-5 pb-4 bg-app-modal-bg">
           <Text className="text-center mt-4 mb-6 text-2xl font-semibold text-app-text-primary">
-            Select Players
+            Add Players to Session
           </Text>
 
-          {/* Scrollable player list with max height for 10 items */}
+          {/* Scrollable player list */}
           <ScrollView
             style={{ maxHeight: 440 }}
             keyboardShouldPersistTaps="handled"
           >
-            {filteredPlayers.map((player) => (
-              <PlayerRow
-                key={player.id}
-                playerName={player.name}
-                selected={selectedPlayerIds.includes(player.id)}
-                onPress={() => togglePlayer(player.id)}
-              />
-            ))}
+            {filteredPlayers.length === 0 ? (
+              <Text className="text-center text-app-text-muted py-8">
+                No available players to add.
+              </Text>
+            ) : (
+              filteredPlayers.map((player) => (
+                <PlayerRow
+                  key={player.id}
+                  playerName={player.name}
+                  selected={selectedPlayerIds.includes(player.id)}
+                  onPress={() => togglePlayer(player.id)}
+                />
+              ))
+            )}
           </ScrollView>
-
-          {/* Add Player input/button always at the bottom */}
-          <View className="mb-2">
-            <AddPlayerRow
-              show={showAddPlayer}
-              value={newPlayerName}
-              onChange={setNewPlayerName}
-              onAdd={handleAddPlayer}
-              onCancel={() => {
-                setShowAddPlayer(false);
-                setNewPlayerName("");
-              }}
-              onShow={() => setShowAddPlayer(true)}
-            />
-          </View>
-
-          <Text className="text-center mb-6 text-sm text-app-text-muted">
-            {selectedPlayerIds.length} players selected (minimum 4 required)
-          </Text>
 
           <View className="mb-4">
             <View style={{ position: "relative", justifyContent: "center" }}>
@@ -276,6 +194,11 @@ export default function StartSessionModal({
             </View>
           </View>
 
+          <Text className="text-center mb-6 text-sm text-app-text-muted">
+            {selectedPlayerIds.length} player
+            {selectedPlayerIds.length === 1 ? "" : "s"} selected
+          </Text>
+
           <View className="flex-row gap-4">
             <TouchableOpacity
               className="flex-1 py-4 rounded-xl border-2 border-app-primary items-center"
@@ -288,21 +211,21 @@ export default function StartSessionModal({
 
             <TouchableOpacity
               className={`flex-1 py-4 rounded-xl items-center ${
-                selectedPlayerIds.length < 4
+                selectedPlayerIds.length === 0
                   ? "bg-app-disabled"
                   : "bg-app-primary"
               }`}
-              onPress={handleStartSession}
-              disabled={selectedPlayerIds.length < 4}
+              onPress={handleAddPlayers}
+              disabled={selectedPlayerIds.length === 0}
             >
               <Text
                 className={`text-base font-semibold ${
-                  selectedPlayerIds.length < 4
+                  selectedPlayerIds.length === 0
                     ? "text-app-text-disabled"
                     : "text-app-white"
                 }`}
               >
-                Start Session
+                Add to Session
               </Text>
             </TouchableOpacity>
           </View>

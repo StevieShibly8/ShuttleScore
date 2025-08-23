@@ -1,3 +1,4 @@
+import AddPlayersModal from "@/components/AddPlayersModal";
 import { DuoCard } from "@/components/DuoCard";
 import { GameCard } from "@/components/GameCard";
 import ModalPopup from "@/components/ModalPopup";
@@ -14,18 +15,25 @@ import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 
 export default function SessionScreen() {
   const { sessionId } = useLocalSearchParams();
-  const getSessionById = useSessionStore((state) => state.getSessionById);
   const addGameToSession = useSessionStore((state) => state.addGameToSession);
   const getDuoById = useDuoStore((state) => state.getDuoById);
   const addDuo = useDuoStore((state) => state.addDuo);
   const endSession = useSessionStore((state) => state.endSession);
+  const updatePlayerBenchStatus = useSessionStore(
+    (state) => state.updatePlayerBenchStatus
+  );
+  const [playersExpanded, setPlayersExpanded] = useState(false);
+  const [duosExpanded, setDuosExpanded] = useState(false);
 
   const [modalVisible, setModalVisible] = useState(false);
   const [showEndSessionModal, setShowEndSessionModal] = useState(false);
+  const [showAddPlayerModal, setShowAddPlayerModal] = useState(false);
 
-  const session = getSessionById(sessionId as string);
+  const session = useSessionStore((state) =>
+    state.getSessionById(sessionId as string)
+  );
   const pastGames = session?.pastGames;
-  const playerIds = session?.playerIds;
+  const playerIds = session?.players ? Object.keys(session.players) : [];
   const duoIds = session?.duoIds;
 
   const getExistingDuo = (playerIds: string[]): Duo => {
@@ -67,14 +75,22 @@ export default function SessionScreen() {
           </TouchableOpacity>
           <Text className="text-3xl text-white font-800 flex-1">Home</Text>
           {session?.isSessionActive && (
-            <TouchableOpacity
-              className="bg-app-danger py-4 px-4 rounded-xl-plus items-center shadow-lg"
-              onPress={() => {
-                setShowEndSessionModal(true);
-              }}
-            >
-              <Text className="text-white font-bold">End Session</Text>
-            </TouchableOpacity>
+            <>
+              <TouchableOpacity
+                className="bg-app-secondary py-4 px-4 rounded-xl-plus items-center shadow-lg mr-3"
+                onPress={() => setShowAddPlayerModal(true)}
+              >
+                <Text className="text-white font-bold">Add Players</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                className="bg-app-danger py-4 px-4 rounded-xl-plus items-center shadow-lg"
+                onPress={() => {
+                  setShowEndSessionModal(true);
+                }}
+              >
+                <Text className="text-white font-bold">End Session</Text>
+              </TouchableOpacity>
+            </>
           )}
         </View>
 
@@ -122,49 +138,94 @@ export default function SessionScreen() {
           </>
         )}
 
+        {/* Players Accordion */}
         <View className="mb-8">
-          <Text className="text-white text-xl font-bold mb-4">Players</Text>
-          <View className="space-y-3">
-            {[...(playerIds ?? [])]
-              .sort((a, b) => {
-                const winsA = session?.gamesWonPerPlayer[a] ?? 0;
-                const winsB = session?.gamesWonPerPlayer[b] ?? 0;
-                return winsB - winsA; // Descending order
-              })
-              .map((playerId) => {
-                const wins = session?.gamesWonPerPlayer[playerId] ?? 0;
-                const played = session?.gamesPlayedPerPlayer[playerId] ?? 0;
-                const losses = played - wins;
-                return (
-                  <PlayerCard
-                    key={playerId}
-                    id={playerId}
-                    wins={wins}
-                    losses={losses}
-                  />
-                );
-              })}
-          </View>
+          <TouchableOpacity
+            className="flex-row items-center justify-between mb-4"
+            onPress={() => setPlayersExpanded((prev) => !prev)}
+            activeOpacity={0.7}
+          >
+            <Text className="text-white text-xl font-bold">Players</Text>
+            <Ionicons
+              name={playersExpanded ? "chevron-up" : "chevron-down"}
+              size={22}
+              color="#fff"
+            />
+          </TouchableOpacity>
+          {playersExpanded && (
+            <View className="space-y-3">
+              {playerIds
+                .sort((a, b) => {
+                  const winsA = session?.gamesWonPerPlayer[a] ?? 0;
+                  const winsB = session?.gamesWonPerPlayer[b] ?? 0;
+                  return winsB - winsA;
+                })
+                .map((playerId) => {
+                  const wins = session?.gamesWonPerPlayer[playerId] ?? 0;
+                  const played = session?.gamesPlayedPerPlayer[playerId] ?? 0;
+                  const losses = played - wins;
+                  const isBenched =
+                    session?.players?.[playerId]?.isBenched ?? false;
+
+                  return (
+                    <PlayerCard
+                      key={playerId}
+                      id={playerId}
+                      wins={wins}
+                      losses={losses}
+                      showBenchButton={true}
+                      isBenched={isBenched}
+                      onBenchPress={() => {
+                        updatePlayerBenchStatus(
+                          sessionId as string,
+                          playerId,
+                          !isBenched
+                        );
+                      }}
+                    />
+                  );
+                })}
+            </View>
+          )}
         </View>
 
+        {/* Duos Accordion */}
         <View className="mb-8">
-          <Text className="text-white text-xl font-bold mb-4">Duos</Text>
-          <View className="space-y-3">
-            {[...(duoIds ?? [])]
-              .sort((a, b) => {
-                const winsA = session?.gamesWonPerDuo[a] ?? 0;
-                const winsB = session?.gamesWonPerDuo[b] ?? 0;
-                return winsB - winsA; // Descending order
-              })
-              .map((duoId) => {
-                const wins = session?.gamesWonPerDuo[duoId] ?? 0;
-                const played = session?.gamesPlayedPerDuo[duoId] ?? 0;
-                const losses = played - wins;
-                return (
-                  <DuoCard key={duoId} id={duoId} wins={wins} losses={losses} />
-                );
-              })}
-          </View>
+          <TouchableOpacity
+            className="flex-row items-center justify-between mb-4"
+            onPress={() => setDuosExpanded((prev) => !prev)}
+            activeOpacity={0.7}
+          >
+            <Text className="text-white text-xl font-bold">Duos</Text>
+            <Ionicons
+              name={duosExpanded ? "chevron-up" : "chevron-down"}
+              size={22}
+              color="#fff"
+            />
+          </TouchableOpacity>
+          {duosExpanded && (
+            <View className="space-y-3">
+              {[...(duoIds ?? [])]
+                .sort((a, b) => {
+                  const winsA = session?.gamesWonPerDuo[a] ?? 0;
+                  const winsB = session?.gamesWonPerDuo[b] ?? 0;
+                  return winsB - winsA;
+                })
+                .map((duoId) => {
+                  const wins = session?.gamesWonPerDuo[duoId] ?? 0;
+                  const played = session?.gamesPlayedPerDuo[duoId] ?? 0;
+                  const losses = played - wins;
+                  return (
+                    <DuoCard
+                      key={duoId}
+                      id={duoId}
+                      wins={wins}
+                      losses={losses}
+                    />
+                  );
+                })}
+            </View>
+          )}
         </View>
 
         <View className="space-y-3 pb-8">
@@ -191,8 +252,16 @@ export default function SessionScreen() {
         visible={modalVisible}
         onClose={() => setModalVisible(false)}
         onStartGame={handleStartGame}
-        sessionPlayerIds={playerIds ?? []}
+        sessionPlayerIds={
+          playerIds
+            ? playerIds.filter((pid) => !session?.players?.[pid]?.isBenched)
+            : []
+        }
         sessionId={sessionId as string}
+      />
+      <AddPlayersModal
+        visible={showAddPlayerModal}
+        onClose={() => setShowAddPlayerModal(false)}
       />
     </ScrollView>
   );

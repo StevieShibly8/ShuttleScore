@@ -29,11 +29,11 @@ export default function StatsScreen() {
             Overall Stats
           </Text>
           <View className="space-y-3">
-            <View className="flex-row justify-between p-4 rounded-xl-plus bg-app-card border border-app-card-border">
+            <View className="flex-row justify-between p-4 mb-2 rounded-xl-plus bg-app-card border border-app-card-border">
               <Text className="text-app-text-secondary">Total Games</Text>
               <Text className="text-white font-semibold">{totalGames}</Text>
             </View>
-            <View className="flex-row justify-between p-4 rounded-xl-plus bg-app-card border border-app-card-border">
+            <View className="flex-row justify-between p-4 mb-2 rounded-xl-plus bg-app-card border border-app-card-border">
               <Text className="text-app-text-secondary">Total Sessions</Text>
               <Text className="text-white font-semibold">{totalSessions}</Text>
             </View>
@@ -47,7 +47,7 @@ export default function StatsScreen() {
         </View>
 
         <View className="space-y-3">
-          <Text className="text-white text-lg font-bold mb-2">
+          <Text className="text-white text-lg font-bold mb-4">
             Player Performance
           </Text>
           {[...players]
@@ -65,9 +65,7 @@ export default function StatsScreen() {
               return bWinRate - aWinRate;
             })
             .map((player, index) => (
-              <View key={player.id} className="mb-2">
-                <PlayerCard id={player.id} rank={index + 1} />
-              </View>
+              <PlayerCard key={player.id} id={player.id} rank={index + 1} />
             ))}
         </View>
       </View>

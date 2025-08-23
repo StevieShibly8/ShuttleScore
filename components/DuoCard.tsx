@@ -105,7 +105,7 @@ export const DuoCard = ({ id, wins, losses, rank }: DuoCardProps) => {
             justifyContent: "center",
           }}
         >
-          <Text className="text-app-success text-sm font-semibold">
+          <Text className="text-app-primary text-sm font-semibold">
             RP: {avgRp}
           </Text>
           <View style={{ flexDirection: "row", marginTop: 4 }}>

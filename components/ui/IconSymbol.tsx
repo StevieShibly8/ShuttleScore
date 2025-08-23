@@ -23,6 +23,7 @@ const MAPPING = {
   "chevron.right": "chevron-right",
   "chart.bar.fill": "bar-chart",
   "tennis.racket": "sports-tennis",
+  "person.circle.fill": "group",
 } as IconMapping;
 
 /**

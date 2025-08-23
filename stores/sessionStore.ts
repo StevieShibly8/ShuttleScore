@@ -16,6 +16,12 @@ interface SessionStore {
   getGameById: (sessionId: string, gameId: string) => Game | undefined;
   getCurrentGame: (sessionId: string) => Game | undefined;
   endCurrentGame: (sessionId: string, isGameCompleted: boolean) => void;
+  updatePlayerBenchStatus: (
+    sessionId: string,
+    playerId: string,
+    isBenched: boolean
+  ) => void;
+  addPlayersToSession: (playerIds: string[], duoIds: string[]) => void;
 }
 
 const sessionStoreCreator: StateCreator<SessionStore> = (set, get) => ({
@@ -26,7 +32,9 @@ const sessionStoreCreator: StateCreator<SessionStore> = (set, get) => ({
     const gamesWonPerPlayer: Record<string, number> = {};
     const gamesWonPerDuo: Record<string, number> = {};
 
+    const players: Record<string, { isBenched: boolean }> = {};
     playerIds.forEach((pid) => {
+      players[pid] = { isBenched: false };
       gamesPlayedPerPlayer[pid] = 0;
       gamesWonPerPlayer[pid] = 0;
     });
@@ -38,7 +46,7 @@ const sessionStoreCreator: StateCreator<SessionStore> = (set, get) => ({
 
     const newSession: Session = {
       id: uuid.v4() as string,
-      playerIds,
+      players,
       duoIds,
       date: new Date().toLocaleString(),
       pastGames: [],
@@ -125,6 +133,62 @@ const sessionStoreCreator: StateCreator<SessionStore> = (set, get) => ({
     }
 
     get().updateSession(sessionId, update);
+  },
+  updatePlayerBenchStatus: (
+    sessionId: string,
+    playerId: string,
+    isBenched: boolean
+  ) => {
+    const session = get().getSessionById(sessionId);
+    if (session && session.players[playerId]) {
+      const updatedPlayers = {
+        ...session.players,
+        [playerId]: {
+          ...session.players[playerId],
+          isBenched,
+        },
+      };
+      get().updateSession(sessionId, { players: updatedPlayers });
+    }
+  },
+  addPlayersToSession: (playerIds: string[], duoIds: string[]) => {
+    const session = get().getCurrentSession();
+    if (!session) return;
+
+    const updatedPlayers = { ...session.players };
+    playerIds.forEach((pid) => {
+      if (!updatedPlayers[pid]) {
+        updatedPlayers[pid] = { isBenched: false };
+      }
+    });
+
+    const updatedDuoIds = Array.from(
+      new Set([...(session.duoIds || []), ...duoIds])
+    );
+
+    const updatedGamesPlayedPerPlayer = { ...session.gamesPlayedPerPlayer };
+    const updatedGamesWonPerPlayer = { ...session.gamesWonPerPlayer };
+    playerIds.forEach((pid) => {
+      if (!(pid in updatedGamesPlayedPerPlayer))
+        updatedGamesPlayedPerPlayer[pid] = 0;
+      if (!(pid in updatedGamesWonPerPlayer)) updatedGamesWonPerPlayer[pid] = 0;
+    });
+
+    const updatedGamesPlayedPerDuo = { ...session.gamesPlayedPerDuo };
+    const updatedGamesWonPerDuo = { ...session.gamesWonPerDuo };
+    duoIds.forEach((did) => {
+      if (!(did in updatedGamesPlayedPerDuo)) updatedGamesPlayedPerDuo[did] = 0;
+      if (!(did in updatedGamesWonPerDuo)) updatedGamesWonPerDuo[did] = 0;
+    });
+
+    get().updateSession(session.id, {
+      players: updatedPlayers,
+      duoIds: updatedDuoIds,
+      gamesPlayedPerPlayer: updatedGamesPlayedPerPlayer,
+      gamesWonPerPlayer: updatedGamesWonPerPlayer,
+      gamesPlayedPerDuo: updatedGamesPlayedPerDuo,
+      gamesWonPerDuo: updatedGamesWonPerDuo,
+    });
   },
 });
 

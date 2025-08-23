@@ -193,23 +193,20 @@ export default function StartGameModal({
       presentationStyle="overFullScreen"
     >
       <View className="flex-1 bg-app-overlay justify-end">
-        <View
-          className="rounded-t-3xl bg-app-modal-bg pt-3 px-5 pb-0"
-          style={{ maxHeight: "85%" }}
-        >
-          <ScrollView
-            contentContainerStyle={{ paddingBottom: 40 }}
-            showsVerticalScrollIndicator={false}
-          >
-            <View className="w-10 h-1 bg-app-text-muted rounded-full self-center mb-5" />
-            <Text className="text-center mb-6 text-2xl font-semibold text-app-text-primary">
-              Select 2 Players for Each Team
-            </Text>
+        <View className="rounded-t-3xl bg-app-modal-bg pt-3 px-5 pb-2">
+          <Text className="text-center mt-4 mb-6 text-2xl font-semibold text-app-text-primary">
+            Select 2 Players for Each Team
+          </Text>
 
-            <View className="mb-4">
-              <Text className="text-lg font-bold text-app-primary mb-2">
-                Team A
-              </Text>
+          {/* Team A List */}
+          <View className="mb-4">
+            <Text className="text-lg font-bold text-app-primary mb-2">
+              Team A
+            </Text>
+            <ScrollView
+              style={{ maxHeight: 264 }}
+              keyboardShouldPersistTaps="handled"
+            >
               {sessionPlayerIds.map((playerId) => {
                 const player = getPlayerById(playerId);
                 if (!player) return null;
@@ -234,7 +231,7 @@ export default function StartGameModal({
                     </View>
                     {!disabled && (
                       <View
-                        className={`w-6 h-6 rounded-full border-2 items-center justify-center
+                        className={`w-6 h-6 mr-2 rounded-full border-2 items-center justify-center
       ${selected ? "bg-app-selected-border border-app-selected-border" : "border-app-text-muted"}
     `}
                       >
@@ -248,12 +245,18 @@ export default function StartGameModal({
                   </TouchableOpacity>
                 );
               })}
-            </View>
+            </ScrollView>
+          </View>
 
-            <View className="mb-4">
-              <Text className="text-lg font-bold text-app-primary mb-2">
-                Team B
-              </Text>
+          {/* Team B List */}
+          <View className="mb-4">
+            <Text className="text-lg font-bold text-app-primary mb-2">
+              Team B
+            </Text>
+            <ScrollView
+              style={{ maxHeight: 264 }}
+              keyboardShouldPersistTaps="handled"
+            >
               {sessionPlayerIds.map((playerId) => {
                 const player = getPlayerById(playerId);
                 if (!player) return null;
@@ -278,7 +281,7 @@ export default function StartGameModal({
                     </View>
                     {!disabled && (
                       <View
-                        className={`w-6 h-6 rounded-full border-2 items-center justify-center
+                        className={`w-6 h-6 mr-2 rounded-full border-2 items-center justify-center
       ${selected ? "bg-app-selected-border border-app-selected-border" : "border-app-text-muted"}
     `}
                       >
@@ -292,56 +295,56 @@ export default function StartGameModal({
                   </TouchableOpacity>
                 );
               })}
-            </View>
+            </ScrollView>
+          </View>
 
-            <Text className="text-center mb-6 text-sm text-app-text-muted">
-              Team A: {teamAPlayerIds.length}/2 Team B: {teamBPlayerIds.length}
-              /2
-            </Text>
-            <View className="flex-row gap-4 mb-4">
-              <TouchableOpacity
-                className="flex-1 py-4 rounded-xl border-2 border-app-primary items-center"
-                onPress={handleCancel}
-              >
-                <Text className="text-app-primary text-base font-semibold">
-                  Cancel
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                className={`flex-1 py-4 rounded-xl items-center ${
-                  teamAPlayerIds.length !== selectionLimit ||
-                  teamBPlayerIds.length !== selectionLimit
-                    ? "bg-app-disabled"
-                    : "bg-app-primary"
-                }`}
-                onPress={handleStartGame}
-                disabled={
-                  teamAPlayerIds.length !== selectionLimit ||
-                  teamBPlayerIds.length !== selectionLimit
-                }
-              >
-                <Text
-                  className={`text-base font-semibold ${
-                    teamAPlayerIds.length !== selectionLimit ||
-                    teamBPlayerIds.length !== selectionLimit
-                      ? "text-app-text-disabled"
-                      : "text-app-white"
-                  }`}
-                >
-                  Start Game
-                </Text>
-              </TouchableOpacity>
-            </View>
+          <Text className="text-center mb-6 text-sm text-app-text-muted">
+            Team A: {teamAPlayerIds.length}/2 Team B: {teamBPlayerIds.length}
+            /2
+          </Text>
+          <View className="flex-row gap-4 mb-4">
             <TouchableOpacity
-              className="w-full py-4 rounded-xl bg-app-secondary items-center mb-4"
-              onPress={handleRandomize}
+              className="flex-1 py-4 rounded-xl border-2 border-app-primary items-center"
+              onPress={handleCancel}
             >
-              <Text className="text-app-white text-base font-semibold">
-                Randomize Selection
+              <Text className="text-app-primary text-base font-semibold">
+                Cancel
               </Text>
             </TouchableOpacity>
-          </ScrollView>
+
+            <TouchableOpacity
+              className={`flex-1 py-4 rounded-xl items-center ${
+                teamAPlayerIds.length !== selectionLimit ||
+                teamBPlayerIds.length !== selectionLimit
+                  ? "bg-app-disabled"
+                  : "bg-app-primary"
+              }`}
+              onPress={handleStartGame}
+              disabled={
+                teamAPlayerIds.length !== selectionLimit ||
+                teamBPlayerIds.length !== selectionLimit
+              }
+            >
+              <Text
+                className={`text-base font-semibold ${
+                  teamAPlayerIds.length !== selectionLimit ||
+                  teamBPlayerIds.length !== selectionLimit
+                    ? "text-app-text-disabled"
+                    : "text-app-white"
+                }`}
+              >
+                Start Game
+              </Text>
+            </TouchableOpacity>
+          </View>
+          <TouchableOpacity
+            className="w-full py-4 rounded-xl bg-app-secondary items-center mb-4"
+            onPress={handleRandomize}
+          >
+            <Text className="text-app-white text-base font-semibold">
+              Randomize Selection
+            </Text>
+          </TouchableOpacity>
         </View>
       </View>
     </Modal>

@@ -14,7 +14,7 @@ export default function TabLayout() {
         tabBarStyle: {
           backgroundColor: "#000000",
           borderTopColor: "rgba(255, 255, 255, 0.1)",
-          // borderTopWidth: 0,
+          borderTopWidth: 0,
           ...Platform.select({
             ios: {
               position: "absolute",
@@ -39,6 +39,15 @@ export default function TabLayout() {
           title: "Sessions",
           tabBarIcon: ({ color }) => (
             <IconSymbol size={28} name="tennis.racket" color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="players"
+        options={{
+          title: "Players",
+          tabBarIcon: ({ color }) => (
+            <IconSymbol size={28} name="person.circle.fill" color={color} />
           ),
         }}
       />
