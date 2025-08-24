@@ -104,11 +104,11 @@ const AddPlayerRow = ({
     </TouchableOpacity>
   );
 
-export default function StartSessionModal({
+export const StartSessionModal = ({
   visible,
   onClose,
   onStartSession,
-}: StartSessionModalProps) {
+}: StartSessionModalProps) => {
   const players = usePlayerStore((state) => state.players);
   const addPlayer = usePlayerStore((state) => state.addPlayer);
   const addDuo = useDuoStore((state) => state.addDuo);
@@ -310,4 +310,4 @@ export default function StartSessionModal({
       </View>
     </Modal>
   );
-}
+};

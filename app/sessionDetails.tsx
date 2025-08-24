@@ -1,9 +1,9 @@
-import AddPlayersModal from "@/components/AddPlayersModal";
+import { AddPlayersModal } from "@/components/AddPlayersModal";
 import { DuoCard } from "@/components/DuoCard";
 import { GameCard } from "@/components/GameCard";
-import ModalPopup from "@/components/ModalPopup";
+import { ModalPopup } from "@/components/ModalPopup";
 import { PlayerCard } from "@/components/PlayerCard";
-import StartGameModal from "@/components/StartGameModal";
+import { StartGameModal } from "@/components/StartGameModal";
 import { Duo } from "@/data/duoData";
 import { Team } from "@/data/gameData";
 import { useDuoStore } from "@/stores/duoStore";
@@ -13,7 +13,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 
-export default function SessionScreen() {
+export default function SessionDetailsScreen() {
   const { sessionId } = useLocalSearchParams();
   const session = useSessionStore((state) =>
     state.getSessionById(sessionId as string)
@@ -151,7 +151,9 @@ export default function SessionScreen() {
             onPress={() => setPlayersExpanded((prev) => !prev)}
             activeOpacity={0.7}
           >
-            <Text className="text-white text-xl font-bold">Players</Text>
+            <Text className="text-white text-xl font-bold">
+              Players ({playerIds?.length})
+            </Text>
             <Ionicons
               name={playersExpanded ? "chevron-up" : "chevron-down"}
               size={22}
@@ -209,7 +211,9 @@ export default function SessionScreen() {
             onPress={() => setDuosExpanded((prev) => !prev)}
             activeOpacity={0.7}
           >
-            <Text className="text-white text-xl font-bold">Duos</Text>
+            <Text className="text-white text-xl font-bold">
+              Duos ({duoIds?.length})
+            </Text>
             <Ionicons
               name={duosExpanded ? "chevron-up" : "chevron-down"}
               size={22}
@@ -242,7 +246,9 @@ export default function SessionScreen() {
         </View>
 
         <View className="space-y-3 pb-8">
-          <Text className="text-white text-xl font-bold mb-4">Games</Text>
+          <Text className="text-white text-xl font-bold mb-4">
+            Games ({pastGames?.length})
+          </Text>
           {!pastGames || pastGames.length === 0 ? (
             <View className="items-center justify-center py-12">
               <Text className="text-app-text-muted text-base text-center">

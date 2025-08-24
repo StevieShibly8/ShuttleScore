@@ -49,10 +49,7 @@ const PlayerRow = ({
   </TouchableOpacity>
 );
 
-export default function AddPlayersModal({
-  visible,
-  onClose,
-}: AddPlayersModalProps) {
+export const AddPlayersModal = ({ visible, onClose }: AddPlayersModalProps) => {
   const players = usePlayerStore((state) => state.players);
   const session = useSessionStore((state) => state.getCurrentSession());
   const addPlayersToSession = useSessionStore(
@@ -233,4 +230,4 @@ export default function AddPlayersModal({
       </View>
     </Modal>
   );
-}
+};

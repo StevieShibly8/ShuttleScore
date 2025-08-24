@@ -23,7 +23,7 @@ interface ModalPopupProps {
   onConfirm?: () => void;
 }
 
-export default function ModalPopup({
+export const ModalPopup = ({
   visible,
   messageTitle,
   messageBody,
@@ -35,7 +35,7 @@ export default function ModalPopup({
   icon,
   onCancel,
   onConfirm,
-}: ModalPopupProps) {
+}: ModalPopupProps) => {
   const { width, height } = Dimensions.get("window");
   const modalWidth = Math.min(width, height) * 0.8;
 
@@ -148,4 +148,4 @@ export default function ModalPopup({
       </Modal>
     </View>
   );
-}
+};

@@ -1,5 +1,5 @@
-import BadmintonCourt from "@/components/BadmintonCourt";
-import ModalPopup from "@/components/ModalPopup";
+import { BadmintonCourt } from "@/components/BadmintonCourt";
+import { ModalPopup } from "@/components/ModalPopup";
 import { Scoreboard } from "@/components/Scoreboard";
 import { useDuoStore } from "@/stores/duoStore";
 import { usePlayerStore } from "@/stores/playerStore";
@@ -590,7 +590,7 @@ export default function GameScreen() {
           updateSessionStats();
           endCurrentGame(sessionId as string, isGameComplete);
           router.replace({
-            pathname: "/pastGame",
+            pathname: "/gameDetails",
             params: { sessionId, gameId: game.id },
           });
         }}

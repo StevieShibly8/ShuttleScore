@@ -46,7 +46,7 @@ export const GameCard = ({ gameId, sessionId, isActive }: GameCardProps) => {
         game.isGameActive
           ? router.push({ pathname: "/currentGame", params: { sessionId } })
           : router.push({
-              pathname: "/pastGame",
+              pathname: "/gameDetails",
               params: { sessionId, gameId },
             })
       }
@@ -55,8 +55,8 @@ export const GameCard = ({ gameId, sessionId, isActive }: GameCardProps) => {
         style={{
           backgroundColor: cardBg,
           borderRadius: 16,
-          padding: 12,
-          marginBottom: 10,
+          padding: 16,
+          marginBottom: 8,
           borderWidth: 1,
           borderColor: "#333a44",
         }}

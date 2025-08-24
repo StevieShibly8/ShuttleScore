@@ -22,6 +22,7 @@ interface SessionStore {
     isBenched: boolean
   ) => void;
   addPlayersToSession: (playerIds: string[], duoIds: string[]) => void;
+  importSessions: (sessions: Session[]) => void;
 }
 
 const sessionStoreCreator: StateCreator<SessionStore> = (set, get) => ({
@@ -190,6 +191,8 @@ const sessionStoreCreator: StateCreator<SessionStore> = (set, get) => ({
       gamesWonPerDuo: updatedGamesWonPerDuo,
     });
   },
+
+  importSessions: (sessions: Session[]) => set({ sessions }),
 });
 
 export const useSessionStore = create<SessionStore>()(

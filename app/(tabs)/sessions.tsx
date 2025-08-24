@@ -1,7 +1,6 @@
-import SessionCard from "@/components/SessionCard";
+import { SessionCard } from "@/components/SessionCard";
 import { useSessionStore } from "@/stores/sessionStore";
-import { router } from "expo-router";
-import { ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { ScrollView, Text, View } from "react-native";
 
 export default function SessionsScreen() {
   const sessions = useSessionStore((state) => state.sessions);
@@ -25,6 +24,7 @@ export default function SessionsScreen() {
           <Text className="text-white text-lg font-bold mb-2">
             Current Session
           </Text>
+
           {!currentSession ? (
             <View className="items-center justify-center py-12">
               <Text className="text-app-text-muted text-base text-center">
@@ -32,16 +32,7 @@ export default function SessionsScreen() {
               </Text>
             </View>
           ) : (
-            <TouchableOpacity
-              onPress={() =>
-                router.push({
-                  pathname: "/session",
-                  params: { sessionId: currentSession.id },
-                })
-              }
-            >
-              <SessionCard session={currentSession} variant="primary" active />
-            </TouchableOpacity>
+            <SessionCard id={currentSession.id} variant="primary" active />
           )}
         </View>
 
@@ -57,18 +48,7 @@ export default function SessionsScreen() {
             </View>
           ) : (
             pastSessionsSorted.map((session) => (
-              <TouchableOpacity
-                key={session.id}
-                className="mb-3"
-                onPress={() =>
-                  router.push({
-                    pathname: "/session",
-                    params: { sessionId: session.id },
-                  })
-                }
-              >
-                <SessionCard session={session} />
-              </TouchableOpacity>
+              <SessionCard key={session.id} id={session.id} />
             ))
           )}
         </View>

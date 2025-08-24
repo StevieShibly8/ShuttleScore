@@ -129,13 +129,13 @@ function randomizeTeams({
   return { teamAPlayerIds, teamBPlayerIds };
 }
 
-export default function StartGameModal({
+export const StartGameModal = ({
   visible,
   onClose,
   onStartGame,
   sessionPlayerIds,
   sessionId,
-}: StartGameModalProps) {
+}: StartGameModalProps) => {
   const getPlayerById = usePlayerStore((state) => state.getPlayerById);
   const [teamAPlayerIds, setTeamAPlayerIds] = useState<string[]>([]);
   const [teamBPlayerIds, setTeamBPlayerIds] = useState<string[]>([]);
@@ -354,4 +354,4 @@ export default function StartGameModal({
       </View>
     </Modal>
   );
-}
+};

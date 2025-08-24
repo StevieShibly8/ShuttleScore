@@ -23,7 +23,7 @@ interface BadmintonCourtProps {
   onSwapServer: () => void;
 }
 
-export default function BadmintonCourt({
+export const BadmintonCourt = ({
   sessionId,
   teamA,
   teamB,
@@ -35,7 +35,7 @@ export default function BadmintonCourt({
   isTeamBSwapped,
   onSwapTeams,
   onSwapServer,
-}: BadmintonCourtProps) {
+}: BadmintonCourtProps) => {
   const getCurrentGame = useSessionStore((state) => state.getCurrentGame);
   const updateSession = useSessionStore((state) => state.updateSession);
   const currentGame = getCurrentGame(sessionId as string);
@@ -475,4 +475,4 @@ export default function BadmintonCourt({
       </View>
     </View>
   );
-}
+};

@@ -6,7 +6,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import React from "react";
 import { Text, TouchableOpacity, View } from "react-native";
 
-export default function PastGameScreen() {
+export default function GameDetailsScreen() {
   const { sessionId, gameId } = useLocalSearchParams();
   const getGameById = useSessionStore((state) => state.getGameById);
   const getDuoById = useDuoStore((state) => state.getDuoById);

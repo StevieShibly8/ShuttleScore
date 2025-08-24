@@ -8,6 +8,7 @@ interface DuoStore {
   updateDuo: (id: string, duo: Partial<Duo>) => void;
   removeDuo: (id: string) => void;
   getDuoById: (id: string) => Duo | undefined;
+  importDuos: (duos: Duo[]) => void;
 }
 
 const duoStoreCreator: StateCreator<DuoStore> = (set, get) => ({
@@ -31,6 +32,7 @@ const duoStoreCreator: StateCreator<DuoStore> = (set, get) => ({
       duos: state.duos.filter((d: Duo) => d.id !== id),
     })),
   getDuoById: (id: string) => get().duos.find((d: Duo) => d.id === id),
+  importDuos: (duos: Duo[]) => set({ duos }),
 });
 
 export const useDuoStore = create<DuoStore>()(

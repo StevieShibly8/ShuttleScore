@@ -9,6 +9,7 @@ interface PlayerStore {
   updatePlayer: (id: string, player: Partial<Player>) => void;
   removePlayer: (id: string) => void;
   getPlayerById: (id: string) => Player | undefined;
+  importPlayers: (players: Player[]) => void;
 }
 
 const playerStoreCreator: StateCreator<PlayerStore> = (set, get) => ({
@@ -35,6 +36,7 @@ const playerStoreCreator: StateCreator<PlayerStore> = (set, get) => ({
       players: state.players.filter((p: Player) => p.id !== id),
     })),
   getPlayerById: (id: string) => get().players.find((p: Player) => p.id === id),
+  importPlayers: (players: Player[]) => set({ players }),
 });
 
 export const usePlayerStore = create<PlayerStore>()(
