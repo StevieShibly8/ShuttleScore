@@ -72,6 +72,9 @@ export default function GameScreen() {
   }));
 
   const isTeamSwapped = game?.isTeamSwapped ?? false;
+  const isTeamASwapped = game?.isTeamASwapped ?? false;
+  const isTeamBSwapped = game?.isTeamBSwapped ?? false;
+
   const handleSwapTeams = () => {
     if (!game) return;
     leftScoreboardX.value = withTiming(-400, { duration: 250 });
@@ -83,7 +86,7 @@ export default function GameScreen() {
       currentGame: {
         ...game,
         isTeamSwapped: !isTeamSwapped,
-        server: game.server === "A" ? "B" : "A", // keep this to keep shuttlecock on same side
+        server: game.server === "A" ? "B" : "A", // keep this to keep shuttlecock on same team
       },
     });
   };
@@ -110,11 +113,10 @@ export default function GameScreen() {
     (scoreA >= 15 || scoreB >= 15) && Math.abs(scoreA - scoreB) >= 2;
   const isGameComplete: boolean = reachedMaxScore || reachedMinScoreWithDiff;
 
-  const [gameStarted, setGameStarted] = useState(false);
+  const gameStarted = scoreA !== 0 || scoreB !== 0;
 
   const handleScoreA = () => {
     if (isGameComplete) return;
-    if (!gameStarted) setGameStarted(true);
     if (!game) return;
 
     const newUndo: ("A" | "B")[] = [...(game.undoqueue ?? []), "A"];
@@ -143,6 +145,7 @@ export default function GameScreen() {
             ...game.teamA,
             score: scoreA + 1,
           },
+          isTeamASwapped: !game.isTeamASwapped,
           undoqueue: newUndo,
           redoqueue: [],
           initialServer,
@@ -153,7 +156,6 @@ export default function GameScreen() {
 
   const handleScoreB = () => {
     if (isGameComplete) return;
-    if (!gameStarted) setGameStarted(true);
     if (!game) return;
 
     const newUndo: ("A" | "B")[] = [...(game.undoqueue ?? []), "B"];
@@ -182,6 +184,7 @@ export default function GameScreen() {
             ...game.teamB,
             score: scoreB + 1,
           },
+          isTeamBSwapped: !game.isTeamBSwapped,
           undoqueue: newUndo,
           redoqueue: [],
           initialServer,
@@ -377,7 +380,15 @@ export default function GameScreen() {
     if (last === "A" && newTeamA.score > 0) newTeamA.score -= 1;
     if (last === "B" && newTeamB.score > 0) newTeamB.score -= 1;
 
-    if (undoqueue.length === 1) setGameStarted(false);
+    let isTeamASwapped = game.isTeamASwapped;
+    let isTeamBSwapped = game.isTeamBSwapped;
+    const servingTeamBeforeMove = secondLast ?? game.initialServer ?? "A";
+    if (last === "A" && servingTeamBeforeMove === "A") {
+      isTeamASwapped = !isTeamASwapped;
+    }
+    if (last === "B" && servingTeamBeforeMove === "B") {
+      isTeamBSwapped = !isTeamBSwapped;
+    }
 
     updateSession(sessionId as string, {
       currentGame: {
@@ -387,18 +398,28 @@ export default function GameScreen() {
         server: newServer,
         undoqueue: undoqueue.slice(0, -1),
         redoqueue: [...(game.redoqueue ?? []), last],
+        isTeamASwapped,
+        isTeamBSwapped,
       },
     });
   };
 
   const handleRedo = () => {
     if (!game || !game.redoqueue || game.redoqueue.length === 0) return;
-    if (!gameStarted) setGameStarted(true);
     const last = game.redoqueue[game.redoqueue.length - 1];
     let newTeamA = { ...game.teamA };
     let newTeamB = { ...game.teamB };
     if (last === "A") newTeamA.score += 1;
     if (last === "B") newTeamB.score += 1;
+
+    let isTeamASwapped = game.isTeamASwapped;
+    let isTeamBSwapped = game.isTeamBSwapped;
+    if (last === "A" && game.server === "A") {
+      isTeamASwapped = !isTeamASwapped;
+    }
+    if (last === "B" && game.server === "B") {
+      isTeamBSwapped = !isTeamBSwapped;
+    }
 
     updateSession(sessionId as string, {
       currentGame: {
@@ -408,6 +429,8 @@ export default function GameScreen() {
         server: last,
         undoqueue: [...(game.undoqueue ?? []), last],
         redoqueue: game.redoqueue.slice(0, -1),
+        isTeamASwapped,
+        isTeamBSwapped,
       },
     });
   };
@@ -526,6 +549,8 @@ export default function GameScreen() {
             serverIndex={serverIndex}
             gameStarted={gameStarted}
             isTeamSwapped={isTeamSwapped}
+            isTeamASwapped={isTeamASwapped}
+            isTeamBSwapped={isTeamBSwapped}
             onSwapTeams={handleSwapTeams}
             onSwapServer={handleSwapServer}
           />

@@ -17,6 +17,8 @@ interface BadmintonCourtProps {
   serverIndex: number;
   gameStarted: boolean;
   isTeamSwapped: boolean;
+  isTeamASwapped: boolean;
+  isTeamBSwapped: boolean;
   onSwapTeams: () => void;
   onSwapServer: () => void;
 }
@@ -29,12 +31,38 @@ export default function BadmintonCourt({
   serverIndex,
   gameStarted,
   isTeamSwapped,
+  isTeamASwapped,
+  isTeamBSwapped,
   onSwapTeams,
   onSwapServer,
 }: BadmintonCourtProps) {
   const getCurrentGame = useSessionStore((state) => state.getCurrentGame);
   const updateSession = useSessionStore((state) => state.updateSession);
   const currentGame = getCurrentGame(sessionId as string);
+
+  useEffect(() => {
+    if (server === "A") {
+      animateVerticalSwap(
+        teamAPlayer1TranslateY,
+        teamAPlayer2TranslateY,
+        250,
+        !isTeamASwapped
+      );
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isTeamASwapped, server]);
+
+  useEffect(() => {
+    if (server === "B") {
+      animateVerticalSwap(
+        teamBPlayer1TranslateY,
+        teamBPlayer2TranslateY,
+        250,
+        !isTeamBSwapped
+      );
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isTeamBSwapped, server]);
 
   useEffect(() => {
     const { x, y } = getShuttlecockTargetPosition(server, serverIndex);
@@ -56,11 +84,6 @@ export default function BadmintonCourt({
   const shuttlecockY = useSharedValue(0);
   const swapServerButtonRotation = useSharedValue(0);
 
-  const isTeamASwapped = currentGame?.isTeamASwapped ?? false;
-  const isTeamBSwapped = currentGame?.isTeamBSwapped ?? false;
-  const teamASwapped = useRef(false);
-  const teamBSwapped = useRef(false);
-  const teamSwapped = useRef(false);
   const didInit = useRef(false);
 
   useEffect(() => {
@@ -71,33 +94,27 @@ export default function BadmintonCourt({
         teamAPlayer2TranslateX.value = 310;
         teamBPlayer1TranslateX.value = -310;
         teamBPlayer2TranslateX.value = -310;
-        teamSwapped.current = true;
       } else {
         teamAPlayer1TranslateX.value = 0;
         teamAPlayer2TranslateX.value = 0;
         teamBPlayer1TranslateX.value = 0;
         teamBPlayer2TranslateX.value = 0;
-        teamSwapped.current = false;
       }
       // Vertical swap for Team A
       if (isTeamASwapped) {
         teamAPlayer1TranslateY.value = 115;
         teamAPlayer2TranslateY.value = -115;
-        teamASwapped.current = true;
       } else {
         teamAPlayer1TranslateY.value = 0;
         teamAPlayer2TranslateY.value = 0;
-        teamASwapped.current = false;
       }
       // Vertical swap for Team B
       if (isTeamBSwapped) {
         teamBPlayer1TranslateY.value = 115;
         teamBPlayer2TranslateY.value = -115;
-        teamBSwapped.current = true;
       } else {
         teamBPlayer1TranslateY.value = 0;
         teamBPlayer2TranslateY.value = 0;
-        teamBSwapped.current = false;
       }
       didInit.current = true;
     }
@@ -196,13 +213,12 @@ export default function BadmintonCourt({
       teamAPlayer1TranslateY,
       teamAPlayer2TranslateY,
       250,
-      teamASwapped.current
+      isTeamASwapped
     );
-    teamASwapped.current = !teamASwapped.current;
     updateSession(sessionId as string, {
       currentGame: {
         ...currentGame,
-        isTeamASwapped: teamASwapped.current,
+        isTeamASwapped: !isTeamASwapped,
       },
     });
   };
@@ -214,13 +230,12 @@ export default function BadmintonCourt({
       teamBPlayer1TranslateY,
       teamBPlayer2TranslateY,
       250,
-      teamBSwapped.current
+      isTeamBSwapped
     );
-    teamBSwapped.current = !teamBSwapped.current;
     updateSession(sessionId as string, {
       currentGame: {
         ...currentGame,
-        isTeamBSwapped: teamBSwapped.current,
+        isTeamBSwapped: !isTeamBSwapped,
       },
     });
   };
@@ -232,9 +247,8 @@ export default function BadmintonCourt({
       teamBPlayer1TranslateX,
       teamBPlayer2TranslateX,
       500,
-      teamSwapped.current
+      isTeamSwapped
     );
-    teamSwapped.current = !teamSwapped.current;
     onSwapTeams();
   };
 
@@ -297,9 +311,7 @@ export default function BadmintonCourt({
               <View className="absolute left-8 top-1/2 -translate-y-1/2 z-10">
                 <SwapButton
                   direction="vertical"
-                  onPress={
-                    teamSwapped.current ? handleSwapTeamB : handleSwapTeamA
-                  }
+                  onPress={isTeamSwapped ? handleSwapTeamB : handleSwapTeamA}
                 />
               </View>
 
@@ -307,9 +319,7 @@ export default function BadmintonCourt({
               <View className="absolute right-8 top-1/2 -translate-y-1/2 z-10">
                 <SwapButton
                   direction="vertical"
-                  onPress={
-                    teamSwapped.current ? handleSwapTeamA : handleSwapTeamB
-                  }
+                  onPress={isTeamSwapped ? handleSwapTeamA : handleSwapTeamB}
                 />
               </View>
 
