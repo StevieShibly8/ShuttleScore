@@ -41,7 +41,7 @@ export const PlayerCard = ({
   useEffect(() => {
     Animated.timing(paddingAnim, {
       toValue: isBenched ? 16 : 0,
-      duration: 250,
+      duration: 150,
       useNativeDriver: false,
     }).start();
   }, [isBenched, paddingAnim]);
@@ -61,7 +61,10 @@ export const PlayerCard = ({
       >
         <TouchableOpacity
           onPress={() =>
-            router.push({ pathname: "/playerProfile", params: { id } })
+            router.push({
+              pathname: "/playerProfile",
+              params: { playerId: id as string },
+            })
           }
           style={{ flex: 1 }}
           activeOpacity={0.8}
@@ -180,7 +183,10 @@ export const PlayerCard = ({
   return (
     <TouchableOpacity
       onPress={() =>
-        router.push({ pathname: "/playerProfile", params: { id } })
+        router.push({
+          pathname: "/playerProfile",
+          params: { playerId: id as string },
+        })
       }
       activeOpacity={0.8}
     >

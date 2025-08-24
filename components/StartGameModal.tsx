@@ -22,6 +22,11 @@ function randomizeTeams({
   gamesPlayedPerDuo: Record<string, number>;
   priorityPickPlayerIds: string[];
 }) {
+  // If more than 7 players, ignore priority picks
+  if (sessionPlayerIds.length > 7) {
+    priorityPickPlayerIds = [];
+  }
+
   // 1. Handle priority picks
   let teamAPlayerIds: string[] = [];
   let teamBPlayerIds: string[] = [];

@@ -154,7 +154,7 @@ export default function PlayersScreen() {
                 onPress={() =>
                   router.push({
                     pathname: "/playerProfile",
-                    params: { id: player.id },
+                    params: { playerId: player.id },
                   })
                 }
                 style={{

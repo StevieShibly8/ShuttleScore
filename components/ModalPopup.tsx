@@ -12,7 +12,7 @@ import {
 interface ModalPopupProps {
   visible: boolean;
   messageTitle?: string;
-  messageBody?: string;
+  messageBody?: React.ReactNode;
   cancelText?: string;
   confirmText?: string;
   cancelButtonColor?: string;
@@ -92,9 +92,15 @@ export default function ModalPopup({
             <Text style={{ color: "#bbb", fontSize: 20, marginBottom: 30 }}>
               {messageTitle}
             </Text>
-            <Text style={{ color: "#bbb", fontSize: 14, marginBottom: 30 }}>
-              {messageBody}
-            </Text>
+            <View style={{ marginBottom: 30, alignItems: "center" }}>
+              {typeof messageBody === "string" ? (
+                <Text style={{ color: "#bbb", fontSize: 14 }}>
+                  {messageBody}
+                </Text>
+              ) : (
+                messageBody
+              )}
+            </View>
             <View style={{ flexDirection: "row", gap: 50 }}>
               {cancelText !== undefined && (
                 <TouchableOpacity

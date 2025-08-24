@@ -15,6 +15,9 @@ import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 
 export default function SessionScreen() {
   const { sessionId } = useLocalSearchParams();
+  const session = useSessionStore((state) =>
+    state.getSessionById(sessionId as string)
+  );
   const addGameToSession = useSessionStore((state) => state.addGameToSession);
   const getDuoById = useDuoStore((state) => state.getDuoById);
   const addDuo = useDuoStore((state) => state.addDuo);
@@ -22,16 +25,13 @@ export default function SessionScreen() {
   const updatePlayerBenchStatus = useSessionStore(
     (state) => state.updatePlayerBenchStatus
   );
-  const [playersExpanded, setPlayersExpanded] = useState(false);
+  const [playersExpanded, setPlayersExpanded] = useState(true);
   const [duosExpanded, setDuosExpanded] = useState(false);
 
   const [modalVisible, setModalVisible] = useState(false);
   const [showEndSessionModal, setShowEndSessionModal] = useState(false);
   const [showAddPlayerModal, setShowAddPlayerModal] = useState(false);
 
-  const session = useSessionStore((state) =>
-    state.getSessionById(sessionId as string)
-  );
   const pastGames = session?.pastGames;
   const playerIds = session?.players ? Object.keys(session.players) : [];
   const duoIds = session?.duoIds;
@@ -73,7 +73,7 @@ export default function SessionScreen() {
           <TouchableOpacity onPress={() => router.back()} className="mr-3 p-1">
             <Ionicons name="arrow-back" size={28} color="#fff" />
           </TouchableOpacity>
-          <Text className="text-3xl text-white font-800 flex-1">Home</Text>
+          <View className="flex-1" />
           {session?.isSessionActive && (
             <>
               <TouchableOpacity
@@ -110,6 +110,12 @@ export default function SessionScreen() {
             router.replace("/sessions");
           }}
         />
+
+        <View className="items-center mb-8">
+          <Text className="text-3xl text-white font-800 text-center tracking-tight">
+            {session?.isSessionActive ? "Current Session" : "Past Session"}
+          </Text>
+        </View>
 
         {session?.isSessionActive && (
           <>
@@ -167,21 +173,28 @@ export default function SessionScreen() {
                   const isBenched =
                     session?.players?.[playerId]?.isBenched ?? false;
 
+                  // Only pass bench props if session is active
+                  const benchProps = session?.isSessionActive
+                    ? {
+                        showBenchButton: true,
+                        isBenched,
+                        onBenchPress: () => {
+                          updatePlayerBenchStatus(
+                            sessionId as string,
+                            playerId,
+                            !isBenched
+                          );
+                        },
+                      }
+                    : {};
+
                   return (
                     <PlayerCard
                       key={playerId}
                       id={playerId}
                       wins={wins}
                       losses={losses}
-                      showBenchButton={true}
-                      isBenched={isBenched}
-                      onBenchPress={() => {
-                        updatePlayerBenchStatus(
-                          sessionId as string,
-                          playerId,
-                          !isBenched
-                        );
-                      }}
+                      {...benchProps}
                     />
                   );
                 })}

@@ -19,7 +19,7 @@ export default function SessionCard({
   onPress?: () => void;
 }) {
   return (
-    <Card variant={variant}>
+    <Card variant={variant} className={!active ? "py-2 px-4" : ""}>
       <CardTitle
         className={
           variant === "primary"
@@ -36,14 +36,14 @@ export default function SessionCard({
             : `${session.pastGames.length} ${session.pastGames.length === 1 ? "game" : "games"} completed`}
         </Text>
       </CardHeader>
-      <CardContent>
-        {active && (
+      {active && (
+        <CardContent>
           <Text className="text-app-text-secondary text-sm">
             {session.pastGames.length}
             {session.pastGames.length === 1 ? " game" : " games"} played
           </Text>
-        )}
-      </CardContent>
+        </CardContent>
+      )}
       <CardFooter>
         {active && (
           <View className="flex-row justify-between items-center">

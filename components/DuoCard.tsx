@@ -39,7 +39,12 @@ export const DuoCard = ({ id, wins, losses, rank }: DuoCardProps) => {
 
   return (
     <TouchableOpacity
-      onPress={() => router.push({ pathname: "/duoProfile", params: { id } })}
+      onPress={() =>
+        router.push({
+          pathname: "/duoProfile",
+          params: { DuoId: id as string },
+        })
+      }
     >
       <View
         style={{

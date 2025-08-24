@@ -204,20 +204,79 @@ export default function GameScreen() {
   };
 
   const updatePlayerStats = () => {
+    const getStarCount = (rp1: number, rp2: number) => {
+      const avgRp = Math.min(((rp1 ?? 0) + (rp2 ?? 0)) / 2, 100);
+      return Math.max(1, Math.floor(avgRp / 20) + 1);
+    };
+
+    const getRpChange = (starDiff: number, didWin: boolean) => {
+      // starDiff = opponentStars - yourStars
+      if (starDiff === 0) return didWin ? 3 : -2;
+      if (starDiff === 1) return didWin ? 4 : -1;
+      if (starDiff === 2) return didWin ? 5 : 0;
+      if (starDiff === 3) return didWin ? 6 : 1;
+      if (starDiff >= 4) return didWin ? 7 : 2;
+      if (starDiff === -1) return didWin ? 3 : -2;
+      if (starDiff === -2) return didWin ? 2 : -4;
+      if (starDiff === -3) return didWin ? 1 : -6;
+      if (starDiff <= -4) return didWin ? 1 : -8;
+      return 0;
+    };
+
     if (!teamAPlayer1 || !teamAPlayer2 || !teamBPlayer1 || !teamBPlayer2)
       return;
     if (!isGameComplete) return;
 
+    // Calculate average RP and stars for both teams
+    const teamAStars = getStarCount(teamAPlayer1.rp ?? 0, teamAPlayer2.rp ?? 0);
+    const teamBStars = getStarCount(teamBPlayer1.rp ?? 0, teamBPlayer2.rp ?? 0);
+
     if (scoreA > scoreB) {
-      updatePlayer(teamAPlayer1.id, { wins: (teamAPlayer1.wins ?? 0) + 1 });
-      updatePlayer(teamAPlayer2.id, { wins: (teamAPlayer2.wins ?? 0) + 1 });
-      updatePlayer(teamBPlayer1.id, { losses: (teamBPlayer1.losses ?? 0) + 1 });
-      updatePlayer(teamBPlayer2.id, { losses: (teamBPlayer2.losses ?? 0) + 1 });
+      // Team A wins
+      const starDiffA = teamBStars - teamAStars;
+      const starDiffB = teamAStars - teamBStars;
+      const rpChangeA = getRpChange(starDiffA, true);
+      const rpChangeB = getRpChange(starDiffB, false);
+
+      updatePlayer(teamAPlayer1.id, {
+        wins: (teamAPlayer1.wins ?? 0) + 1,
+        rp: Math.max(0, (teamAPlayer1.rp ?? 0) + rpChangeA),
+      });
+      updatePlayer(teamAPlayer2.id, {
+        wins: (teamAPlayer2.wins ?? 0) + 1,
+        rp: Math.max(0, (teamAPlayer2.rp ?? 0) + rpChangeA),
+      });
+      updatePlayer(teamBPlayer1.id, {
+        losses: (teamBPlayer1.losses ?? 0) + 1,
+        rp: Math.max(0, (teamBPlayer1.rp ?? 0) + rpChangeB),
+      });
+      updatePlayer(teamBPlayer2.id, {
+        losses: (teamBPlayer2.losses ?? 0) + 1,
+        rp: Math.max(0, (teamBPlayer2.rp ?? 0) + rpChangeB),
+      });
     } else if (scoreB > scoreA) {
-      updatePlayer(teamBPlayer1.id, { wins: (teamBPlayer1.wins ?? 0) + 1 });
-      updatePlayer(teamBPlayer2.id, { wins: (teamBPlayer2.wins ?? 0) + 1 });
-      updatePlayer(teamAPlayer1.id, { losses: (teamAPlayer1.losses ?? 0) + 1 });
-      updatePlayer(teamAPlayer2.id, { losses: (teamAPlayer2.losses ?? 0) + 1 });
+      // Team B wins
+      const starDiffA = teamBStars - teamAStars;
+      const starDiffB = teamAStars - teamBStars;
+      const rpChangeA = getRpChange(starDiffA, false);
+      const rpChangeB = getRpChange(starDiffB, true);
+
+      updatePlayer(teamBPlayer1.id, {
+        wins: (teamBPlayer1.wins ?? 0) + 1,
+        rp: Math.max(0, (teamBPlayer1.rp ?? 0) + rpChangeB),
+      });
+      updatePlayer(teamBPlayer2.id, {
+        wins: (teamBPlayer2.wins ?? 0) + 1,
+        rp: Math.max(0, (teamBPlayer2.rp ?? 0) + rpChangeB),
+      });
+      updatePlayer(teamAPlayer1.id, {
+        losses: (teamAPlayer1.losses ?? 0) + 1,
+        rp: Math.max(0, (teamAPlayer1.rp ?? 0) + rpChangeA),
+      });
+      updatePlayer(teamAPlayer2.id, {
+        losses: (teamAPlayer2.losses ?? 0) + 1,
+        rp: Math.max(0, (teamAPlayer2.rp ?? 0) + rpChangeA),
+      });
     }
   };
 
@@ -377,7 +436,7 @@ export default function GameScreen() {
         <TouchableOpacity onPress={() => router.back()} className="mr-3 p-1">
           <Ionicons name="arrow-back" size={28} color="#fff" />
         </TouchableOpacity>
-        <Text className="text-3xl text-white font-800 flex-1">Session</Text>
+        <View className="flex-1" />
 
         <View style={{ flexDirection: "row", gap: 16 }}>
           {/* Undo Button */}
@@ -487,14 +546,19 @@ export default function GameScreen() {
       <ModalPopup
         visible={isGameComplete}
         messageTitle="Game Complete!"
-        messageBody={`Winner: ${
-          scoreA > scoreB
-            ? teamAPlayer1?.name + " & " + teamAPlayer2?.name
-            : teamBPlayer1?.name + " & " + teamBPlayer2?.name
-        }`}
+        messageBody={
+          <View className="flex-row items-center">
+            <Text className="text-white text-lg mr-2">
+              Winner:{" "}
+              {scoreA > scoreB
+                ? teamAPlayer1?.name + " & " + teamAPlayer2?.name
+                : teamBPlayer1?.name + " & " + teamBPlayer2?.name}
+            </Text>
+            <Ionicons name="trophy" size={15} color="#F59E0B" />
+          </View>
+        }
         confirmText="Continue"
         confirmButtonColor="#6c935c"
-        icon={<Ionicons name="trophy" size={60} color="#F59E0B" />}
         onConfirm={() => {
           updateDuoStats();
           updatePlayerStats();

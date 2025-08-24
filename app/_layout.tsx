@@ -22,6 +22,8 @@ export default function RootLayout() {
           <Stack.Screen name="currentGame" options={{ headerShown: false }} />
           <Stack.Screen name="pastGame" options={{ headerShown: false }} />
           <Stack.Screen name="session" options={{ headerShown: false }} />
+          <Stack.Screen name="playerProfile" options={{ headerShown: false }} />
+          <Stack.Screen name="duoProfile" options={{ headerShown: false }} />
           <Stack.Screen name="+not-found" />
         </Stack>
       </SafeAreaView>
