@@ -1,6 +1,7 @@
 import SessionCard from "@/components/SessionCard";
 import StartSessionModal from "@/components/StartSessionModal";
 import { useSessionStore } from "@/stores/sessionStore";
+import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useState } from "react";
 import { ScrollView, Text, TouchableOpacity, View } from "react-native";
@@ -31,6 +32,17 @@ export default function HomeScreen() {
       contentContainerStyle={{ flex: 1 }}
     >
       <View className="flex-1 justify-center items-center p-5">
+        <View className="w-full flex-row justify-end mb-4">
+          <TouchableOpacity
+            onPress={() => {
+              router.push("/settings");
+            }}
+            className="p-2"
+          >
+            <Ionicons name="settings-sharp" size={28} color="#fff" />
+          </TouchableOpacity>
+        </View>
+
         <View className="items-center mb-12">
           <Text className="text-5xl text-white font-800 text-center tracking-tight">
             Shuttle Score
