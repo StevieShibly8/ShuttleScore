@@ -67,7 +67,6 @@ export const PlayerCard = ({
             })
           }
           style={{ flex: 1 }}
-          activeOpacity={0.8}
         >
           <View
             style={{
@@ -188,7 +187,6 @@ export const PlayerCard = ({
           params: { playerId: id as string },
         })
       }
-      activeOpacity={0.8}
     >
       <View
         style={{
