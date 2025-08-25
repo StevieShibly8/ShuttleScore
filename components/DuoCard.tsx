@@ -14,6 +14,7 @@ export const DuoCard = ({ id, wins, losses, rank }: DuoCardProps) => {
   const getDuoById = useDuoStore((state) => state.getDuoById);
   const getPlayerById = usePlayerStore((state) => state.getPlayerById);
   const duo = getDuoById(id);
+
   const router = useRouter();
 
   // Get player objects
@@ -42,7 +43,7 @@ export const DuoCard = ({ id, wins, losses, rank }: DuoCardProps) => {
       onPress={() =>
         router.push({
           pathname: "/duoProfile",
-          params: { DuoId: id as string },
+          params: { duoId: id as string },
         })
       }
     >

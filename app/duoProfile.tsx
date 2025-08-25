@@ -36,6 +36,14 @@ export default function DuoProfile() {
   const winRate =
     gamesPlayed > 0 ? ((duo.wins / gamesPlayed) * 100).toFixed(1) : "0";
 
+  // Average RP
+  const rp1 = player1?.rp ?? 0;
+  const rp2 = player2?.rp ?? 0;
+  const avgRp = Math.round((rp1 + rp2) / 2);
+
+  const cappedRp = Math.min(avgRp, 100);
+  const starCount = Math.max(1, Math.floor(cappedRp / 20) + 1);
+
   return (
     <ScrollView className="flex-1 bg-app-background">
       <View className="p-5">
@@ -46,9 +54,19 @@ export default function DuoProfile() {
         </View>
 
         <View className="items-center mb-8">
-          <Text className="text-2xl text-white font-800 text-center tracking-tight mb-2">
+          <Text className="text-3xl text-white font-800 text-center tracking-tight">
             {player1.name} &amp; {player2.name}
           </Text>
+          <View className="flex-row mt-2">
+            {[...Array(starCount)].map((_, i) => (
+              <Text
+                key={i}
+                className="text-yellow-400 text-4xl text-app-warning"
+              >
+                ★
+              </Text>
+            ))}
+          </View>
         </View>
 
         <View className="w-full max-w-xl bg-app-card border border-app-card-border rounded-xl-plus p-6">
@@ -56,6 +74,7 @@ export default function DuoProfile() {
           <Stat label="Wins" value={duo.wins} />
           <Stat label="Losses" value={duo.losses} />
           <Stat label="Win Rate" value={`${winRate}%`} />
+          <Stat label="RP" value={avgRp} />
         </View>
       </View>
     </ScrollView>

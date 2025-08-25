@@ -56,7 +56,6 @@ export default function PlayerProfile() {
           <Stat label="Losses" value={player.losses} />
           <Stat label="Win Rate" value={`${winRate}%`} />
           <Stat label="RP" value={player.rp} />
-          {player.email && <Stat label="Email" value={player.email} />}
         </View>
       </View>
     </ScrollView>
