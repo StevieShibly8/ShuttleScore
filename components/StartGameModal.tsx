@@ -7,30 +7,33 @@ interface StartGameModalProps {
   visible: boolean;
   onClose: () => void;
   onStartGame: (teamAPlayerIds: string[], teamBPlayerIds: string[]) => void;
-  sessionPlayerIds: string[];
+  activePlayerIds: string[];
   sessionId: string;
 }
 
 function randomizeTeams({
-  sessionPlayerIds,
+  activePlayerIds,
   gamesPlayedPerPlayer,
   gamesPlayedPerDuo,
   priorityPickPlayerIds,
 }: {
-  sessionPlayerIds: string[];
+  activePlayerIds: string[];
   gamesPlayedPerPlayer: Record<string, number>;
   gamesPlayedPerDuo: Record<string, number>;
   priorityPickPlayerIds: string[];
 }) {
   // If more than 7 players, ignore priority picks
-  if (sessionPlayerIds.length > 7) {
+  if (activePlayerIds.length > 7) {
     priorityPickPlayerIds = [];
   }
 
   // 1. Handle priority picks
   let teamAPlayerIds: string[] = [];
   let teamBPlayerIds: string[] = [];
-  let remaining: string[] = [...sessionPlayerIds];
+  let remaining: string[] = [...activePlayerIds];
+  priorityPickPlayerIds = priorityPickPlayerIds.filter((id) =>
+    activePlayerIds.includes(id)
+  );
 
   if (priorityPickPlayerIds.length === 2) {
     // Place each on opposite teams
@@ -133,7 +136,7 @@ export const StartGameModal = ({
   visible,
   onClose,
   onStartGame,
-  sessionPlayerIds,
+  activePlayerIds,
   sessionId,
 }: StartGameModalProps) => {
   const getPlayerById = usePlayerStore((state) => state.getPlayerById);
@@ -168,7 +171,7 @@ export const StartGameModal = ({
   const handleRandomize = () => {
     if (!session) return;
     const { teamAPlayerIds, teamBPlayerIds } = randomizeTeams({
-      sessionPlayerIds,
+      activePlayerIds,
       gamesPlayedPerPlayer: session.gamesPlayedPerPlayer,
       gamesPlayedPerDuo: session.gamesPlayedPerDuo,
       priorityPickPlayerIds: session.priorityPickPlayerIds,
@@ -212,7 +215,7 @@ export const StartGameModal = ({
               style={{ maxHeight: 264 }}
               keyboardShouldPersistTaps="handled"
             >
-              {sessionPlayerIds.map((playerId) => {
+              {activePlayerIds.map((playerId) => {
                 const player = getPlayerById(playerId);
                 if (!player) return null;
                 const selected = teamAPlayerIds.includes(playerId);
@@ -262,7 +265,7 @@ export const StartGameModal = ({
               style={{ maxHeight: 264 }}
               keyboardShouldPersistTaps="handled"
             >
-              {sessionPlayerIds.map((playerId) => {
+              {activePlayerIds.map((playerId) => {
                 const player = getPlayerById(playerId);
                 if (!player) return null;
                 const selected = teamBPlayerIds.includes(playerId);

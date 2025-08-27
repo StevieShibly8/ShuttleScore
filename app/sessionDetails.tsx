@@ -165,8 +165,13 @@ export default function SessionDetailsScreen() {
               {playerIds
                 .sort((a, b) => {
                   const winsA = session?.gamesWonPerPlayer[a] ?? 0;
+                  const playedA = session?.gamesPlayedPerPlayer[a] ?? 0;
+                  const winRateA = playedA > 0 ? winsA / playedA : 0;
+
                   const winsB = session?.gamesWonPerPlayer[b] ?? 0;
-                  return winsB - winsA;
+                  const playedB = session?.gamesPlayedPerPlayer[b] ?? 0;
+                  const winRateB = playedB > 0 ? winsB / playedB : 0;
+                  return winRateB - winRateA;
                 })
                 .map((playerId) => {
                   const wins = session?.gamesWonPerPlayer[playerId] ?? 0;
@@ -271,7 +276,7 @@ export default function SessionDetailsScreen() {
         visible={modalVisible}
         onClose={() => setModalVisible(false)}
         onStartGame={handleStartGame}
-        sessionPlayerIds={
+        activePlayerIds={
           playerIds
             ? playerIds.filter((pid) => !session?.players?.[pid]?.isBenched)
             : []
