@@ -6,7 +6,11 @@ import { withAsyncStoragePersist } from "./middleware";
 
 interface SessionStore {
   sessions: Session[];
-  addSession: (playerIds: string[], duoIds: string[]) => Session;
+  addSession: (
+    playerIds: string[],
+    duoIds: string[],
+    sessionDuration: number
+  ) => Session;
   updateSession: (id: string, session: Partial<Session>) => void;
   removeSession: (id: string) => void;
   getSessionById: (id: string) => Session | undefined;
@@ -27,7 +31,11 @@ interface SessionStore {
 
 const sessionStoreCreator: StateCreator<SessionStore> = (set, get) => ({
   sessions: [],
-  addSession: (playerIds: string[], duoIds: string[]) => {
+  addSession: (
+    playerIds: string[],
+    duoIds: string[],
+    sessionDuration: number
+  ) => {
     const gamesPlayedPerPlayer: Record<string, number> = {};
     const gamesPlayedPerDuo: Record<string, number> = {};
     const gamesWonPerPlayer: Record<string, number> = {};
@@ -58,6 +66,7 @@ const sessionStoreCreator: StateCreator<SessionStore> = (set, get) => ({
       gamesWonPerDuo,
       priorityPickPlayerIds: [],
       isSessionActive: true,
+      sessionDuration,
     };
     set((state: SessionStore) => ({
       sessions: [...state.sessions, newSession],

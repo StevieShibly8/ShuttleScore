@@ -13,4 +13,5 @@ export interface Session {
   gamesWonPerDuo: Record<string, number>;
   priorityPickPlayerIds: string[];
   isSessionActive: boolean;
+  sessionDuration: number;
 }

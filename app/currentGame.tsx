@@ -503,24 +503,6 @@ export default function GameScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Quit Confirmation Popup */}
-      <ModalPopup
-        visible={showQuitGameModal}
-        messageTitle="Quit Game?"
-        messageBody="Your progress will be lost! Are you sure you want to quit the game?"
-        cancelText="Cancel"
-        confirmText="Quit"
-        cancelButtonColor="#444"
-        confirmButtonColor="#921721bc"
-        // icon={<Ionicons name="alert-circle" size={40} color="#ff3333" />}
-        onCancel={() => setShowQuitGameModal(false)}
-        onConfirm={() => {
-          setShowQuitGameModal(false);
-          endCurrentGame(sessionId as string, isGameComplete);
-          router.back();
-        }}
-      />
-
       {/* Game Content */}
       <View className="mt-2 mx-2 flex-1 flex-row">
         {/* Left Scoreboard */}
@@ -593,6 +575,24 @@ export default function GameScreen() {
             pathname: "/gameDetails",
             params: { sessionId, gameId: game.id },
           });
+        }}
+      />
+
+      {/* Quit Confirmation Popup */}
+      <ModalPopup
+        visible={showQuitGameModal}
+        messageTitle="Quit Game?"
+        messageBody="Your progress will be lost! Are you sure you want to continue?"
+        cancelText="Cancel"
+        confirmText="Quit"
+        cancelButtonColor="#444"
+        confirmButtonColor="#921721bc"
+        // icon={<Ionicons name="alert-circle" size={40} color="#ff3333" />}
+        onCancel={() => setShowQuitGameModal(false)}
+        onConfirm={() => {
+          setShowQuitGameModal(false);
+          endCurrentGame(sessionId as string, isGameComplete);
+          router.back();
         }}
       />
     </View>

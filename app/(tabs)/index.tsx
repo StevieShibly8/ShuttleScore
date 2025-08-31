@@ -14,12 +14,17 @@ export default function HomeScreen() {
 
   const handleStartSession = (
     selectedPlayerIds: string[],
-    selectedDuoIds: string[]
+    selectedDuoIds: string[],
+    sessionDuration: number
   ) => {
     setModalVisible(false);
-    const newSession = addSession(selectedPlayerIds, selectedDuoIds);
+    const newSession = addSession(
+      selectedPlayerIds,
+      selectedDuoIds,
+      sessionDuration
+    );
     router.push({
-      pathname: "/sessionDetails",
+      pathname: "/currentSession",
       params: {
         sessionId: newSession.id,
       },
@@ -67,9 +72,9 @@ export default function HomeScreen() {
         ) : (
           <View className="w-full max-w-xs shadow-lg">
             <SessionCard
-              id={currentSession.id}
+              sessionId={currentSession.id}
               variant="primary"
-              active={true}
+              active
             />
           </View>
         )}

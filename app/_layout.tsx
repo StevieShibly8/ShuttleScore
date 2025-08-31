@@ -21,6 +21,7 @@ export default function RootLayout() {
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="currentGame" options={{ headerShown: false }} />
           <Stack.Screen name="gameDetails" options={{ headerShown: false }} />
+          <Stack.Screen name="currentSession" options={{ headerShown: false }} />
           <Stack.Screen name="sessionDetails" options={{ headerShown: false }} />
           <Stack.Screen name="playerProfile" options={{ headerShown: false }} />
           <Stack.Screen name="duoProfile" options={{ headerShown: false }} />

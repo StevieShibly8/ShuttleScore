@@ -10,26 +10,28 @@ import { useRouter } from "expo-router";
 import { Text, TouchableOpacity, View } from "react-native";
 
 interface SessionCardProps {
-  id: string;
+  sessionId: string;
   variant?: "default" | "primary";
   active?: boolean;
 }
 
 export const SessionCard = ({
-  id,
+  sessionId,
   variant = "default",
   active = false,
 }: SessionCardProps) => {
   const router = useRouter();
-  const session = useSessionStore((state) => state.getSessionById(id));
+  const session = useSessionStore((state) => state.getSessionById(sessionId));
 
   return (
     <TouchableOpacity
       onPress={() =>
-        router.push({
-          pathname: "/sessionDetails",
-          params: { sessionId: id },
-        })
+        active
+          ? router.push({ pathname: "/currentSession", params: { sessionId } })
+          : router.push({
+              pathname: "/sessionDetails",
+              params: { sessionId },
+            })
       }
     >
       <Card variant={variant} className={!active ? "mb-2 py-2 px-4" : ""}>

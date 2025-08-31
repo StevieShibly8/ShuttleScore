@@ -32,7 +32,11 @@ export default function SessionsScreen() {
               </Text>
             </View>
           ) : (
-            <SessionCard id={currentSession.id} variant="primary" active />
+            <SessionCard
+              sessionId={currentSession.id}
+              variant="primary"
+              active
+            />
           )}
         </View>
 
@@ -48,7 +52,7 @@ export default function SessionsScreen() {
             </View>
           ) : (
             pastSessionsSorted.map((session) => (
-              <SessionCard key={session.id} id={session.id} />
+              <SessionCard key={session.id} sessionId={session.id} />
             ))
           )}
         </View>

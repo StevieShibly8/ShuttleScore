@@ -16,7 +16,8 @@ interface StartSessionModalProps {
   onClose: () => void;
   onStartSession: (
     selectedPlayerIds: string[],
-    selectedDuoIds: string[]
+    selectedDuoIds: string[],
+    duration: number
   ) => void;
 }
 
@@ -119,6 +120,8 @@ export const StartSessionModal = ({
   const [showAddPlayer, setShowAddPlayer] = useState(false);
   const [newPlayerName, setNewPlayerName] = useState("");
   const [search, setSearch] = useState("");
+  const [duration, setDuration] = useState<number>(1);
+  const [customDuration, setCustomDuration] = useState<string>("");
 
   const togglePlayer = (playerId: string) => {
     setSelectedPlayerIds((prev) => {
@@ -126,10 +129,8 @@ export const StartSessionModal = ({
         ? prev.filter((id) => id !== playerId)
         : [...prev, playerId];
 
-      // After updating selected players, update selected duos
       setSelectedDuoIds(() => {
         const duoIds: string[] = [];
-        // For every possible pair of selected players, check if the duo exists
         for (let i = 0; i < newSelected.length; i++) {
           for (let j = i + 1; j < newSelected.length; j++) {
             const sortedIds = [newSelected[i], newSelected[j]].sort();
@@ -150,7 +151,6 @@ export const StartSessionModal = ({
     if (!newPlayerName.trim()) return;
     const newPlayer = addPlayer(newPlayerName.trim());
 
-    // Create new duos for the added player
     players.forEach((player) => {
       if (player.id !== newPlayer.id) {
         const sortedPlayerIds = [newPlayer.id, player.id].sort();
@@ -173,9 +173,13 @@ export const StartSessionModal = ({
   };
 
   const handleStartSession = () => {
-    onStartSession(selectedPlayerIds, selectedDuoIds);
+    const sessionDuration =
+      customDuration !== "" ? parseFloat(customDuration) : duration;
+    onStartSession(selectedPlayerIds, selectedDuoIds, sessionDuration);
     setSelectedPlayerIds([]);
     setSelectedDuoIds([]);
+    setCustomDuration("");
+    setDuration(1);
   };
 
   const handleCancel = () => {
@@ -198,7 +202,56 @@ export const StartSessionModal = ({
     >
       <View className="flex-1 bg-app-overlay justify-end">
         <View className="rounded-t-3xl pt-3 px-5 pb-4 bg-app-modal-bg">
-          <Text className="text-center mt-4 mb-6 text-2xl font-semibold text-app-text-primary">
+          <Text className="text-center mt-4 mb-6 text-2xl font-bold text-app-text-primary">
+            Session Setup
+          </Text>
+
+          {/* Session Duration */}
+          <Text className="text-lg font-semibold text-app-text-primary mb-2">
+            Session Duration
+          </Text>
+          <View className="flex-row mb-4 gap-2">
+            {[1, 1.5, 2].map((opt) => (
+              <TouchableOpacity
+                key={opt}
+                className={`flex-1 py-2 rounded-lg items-center border ${
+                  customDuration === "" && duration === opt
+                    ? "bg-app-primary border-app-primary"
+                    : "bg-transparent border-app-primary"
+                }`}
+                onPress={() => {
+                  setDuration(opt);
+                  setCustomDuration("");
+                }}
+              >
+                <Text
+                  className={`font-semibold ${
+                    customDuration === "" && duration === opt
+                      ? "text-white"
+                      : "text-app-primary"
+                  }`}
+                >
+                  {opt} hr{opt !== 1 ? "s" : ""}
+                </Text>
+              </TouchableOpacity>
+            ))}
+            <TextInput
+              className="flex-1 border border-app-primary rounded-lg px-3 py-2 text-base text-app-text-primary bg-app-modal-bg"
+              placeholder="Custom"
+              placeholderTextColor="#aaa"
+              keyboardType="numeric"
+              value={customDuration}
+              onChangeText={(text) => {
+                if (/^\d*\.?\d*$/.test(text)) {
+                  setCustomDuration(text);
+                }
+              }}
+              onFocus={() => setDuration(0)}
+            />
+          </View>
+
+          {/* Player Selection */}
+          <Text className="text-lg font-semibold text-app-text-primary mb-2">
             Select Players
           </Text>
 
@@ -255,7 +308,7 @@ export const StartSessionModal = ({
                 placeholderTextColor="#aaa"
                 value={search}
                 onChangeText={setSearch}
-                style={{ paddingLeft: 36 }} // add left padding for the icon
+                style={{ paddingLeft: 36 }}
               />
               {search.length > 0 && (
                 <TouchableOpacity
