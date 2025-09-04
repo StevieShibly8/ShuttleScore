@@ -29,9 +29,7 @@ export default function PlayersScreen() {
       if (player.id !== newPlayer.id) {
         const sortedPlayerIds = [newPlayer.id, player.id].sort();
         const duoId = sortedPlayerIds.join("-");
-        if (!getDuoById(duoId)) {
-          addDuo(sortedPlayerIds);
-        }
+        if (!getDuoById(duoId)) addDuo(sortedPlayerIds);
       }
     });
 
@@ -141,6 +139,12 @@ export default function PlayersScreen() {
         )}
 
         <View className="space-y-3">
+          {/* Player count */}
+          <Text className="text-app-text-muted text-base mb-4 text-center">
+            {filteredPlayers.length} player
+            {filteredPlayers.length === 1 ? "" : "s"}:
+          </Text>
+
           {filteredPlayers.length === 0 ? (
             <View className="items-center justify-center py-12">
               <Text className="text-app-text-muted text-base text-center">

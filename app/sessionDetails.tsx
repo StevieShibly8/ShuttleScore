@@ -20,14 +20,18 @@ export default function SessionDetailsScreen() {
 
   const [selectedTab, setSelectedTab] = useState<TabType>("Games");
 
+  const date = session?.date ?? "Unknown Date";
   const pastGames = session?.pastGames ?? [];
   const playerIds = session?.players ? Object.keys(session.players) : [];
   const duoIds = session?.duoIds ?? [];
-
   const duration = session?.sessionDuration ?? 2;
   const totalCost = duration * 25;
   const gamesPlayedPerPlayer = session?.gamesPlayedPerPlayer ?? {};
   const gamesWonPerPlayer = session?.gamesWonPerPlayer ?? {};
+  const gamesPlayedPerDuo = session?.gamesPlayedPerDuo ?? {};
+  const gamesWonPerDuo = session?.gamesWonPerDuo ?? {};
+
+  // Calculate total games played by all players
   const totalGamesPlayedByPlayers = Object.values(gamesPlayedPerPlayer).reduce(
     (sum, num) => sum + num,
     0
@@ -85,7 +89,7 @@ export default function SessionDetailsScreen() {
                 Date
               </Text>
               <Text className="text-white text-base flex-1 text-right">
-                {session.date}
+                {date}
               </Text>
             </View>
             <View className="flex-row items-center bg-app-modal-bg rounded-lg px-4 py-3 mb-2">
@@ -261,13 +265,13 @@ export default function SessionDetailsScreen() {
               ) : (
                 duoIds
                   .sort((a, b) => {
-                    const winsA = session.gamesWonPerDuo[a] ?? 0;
-                    const winsB = session.gamesWonPerDuo[b] ?? 0;
+                    const winsA = gamesWonPerDuo[a] ?? 0;
+                    const winsB = gamesWonPerDuo[b] ?? 0;
                     return winsB - winsA;
                   })
                   .map((duoId) => {
-                    const wins = session.gamesWonPerDuo[duoId] ?? 0;
-                    const played = session.gamesPlayedPerDuo[duoId] ?? 0;
+                    const wins = gamesWonPerDuo[duoId] ?? 0;
+                    const played = gamesPlayedPerDuo[duoId] ?? 0;
                     const losses = played - wins;
                     return (
                       <DuoCard

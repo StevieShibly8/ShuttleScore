@@ -13,6 +13,9 @@ import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 
+const TABS = ["Games", "Players", "Duos"] as const;
+type TabType = (typeof TABS)[number];
+
 export default function CurrentSessionScreen() {
   const { sessionId } = useLocalSearchParams();
   const session = useSessionStore((state) =>
@@ -25,16 +28,21 @@ export default function CurrentSessionScreen() {
   const updatePlayerBenchStatus = useSessionStore(
     (state) => state.updatePlayerBenchStatus
   );
-  const [playersExpanded, setPlayersExpanded] = useState(true);
-  const [duosExpanded, setDuosExpanded] = useState(false);
-
+  const [selectedTab, setSelectedTab] = useState<TabType>("Games");
   const [modalVisible, setModalVisible] = useState(false);
   const [showEndSessionModal, setShowEndSessionModal] = useState(false);
   const [showAddPlayerModal, setShowAddPlayerModal] = useState(false);
 
-  const pastGames = session?.pastGames;
+  const date = session?.date ?? "Unknown Date";
+  const pastGames = session?.pastGames ?? [];
   const playerIds = session?.players ? Object.keys(session.players) : [];
-  const duoIds = session?.duoIds;
+  const duoIds = session?.duoIds ?? [];
+  const duration = session?.sessionDuration ?? 2;
+  const totalCost = duration * 25;
+  const gamesPlayedPerPlayer = session?.gamesPlayedPerPlayer ?? {};
+  const gamesWonPerPlayer = session?.gamesWonPerPlayer ?? {};
+  const gamesPlayedPerDuo = session?.gamesPlayedPerDuo ?? {};
+  const gamesWonPerDuo = session?.gamesWonPerDuo ?? {};
 
   const getExistingDuo = (playerIds: string[]): Duo => {
     const sortedIds = [...playerIds].sort();
@@ -117,38 +125,121 @@ export default function CurrentSessionScreen() {
           </View>
         )}
 
-        {/* Players Accordion */}
+        {/* Session Info */}
         <View className="mb-8">
-          <TouchableOpacity
-            className="flex-row items-center justify-between mb-4"
-            onPress={() => setPlayersExpanded((prev) => !prev)}
-            activeOpacity={0.7}
-          >
-            <Text className="text-white text-xl font-bold">
-              Players ({playerIds?.length})
-            </Text>
-            <Ionicons
-              name={playersExpanded ? "chevron-up" : "chevron-down"}
-              size={22}
-              color="#fff"
-            />
-          </TouchableOpacity>
-          {playersExpanded && (
-            <View className="space-y-3">
-              {playerIds
-                .sort((a, b) => {
-                  const winsA = session?.gamesWonPerPlayer[a] ?? 0;
-                  const playedA = session?.gamesPlayedPerPlayer[a] ?? 0;
-                  const winRateA = playedA > 0 ? winsA / playedA : 0;
+          <Text className="text-xl text-white font-bold mb-3">
+            Session Summary
+          </Text>
+          <View>
+            <View className="flex-row items-center bg-app-modal-bg rounded-lg px-4 py-3 mb-2">
+              <Text className="text-white text-base font-semibold flex-1 text-left">
+                Date
+              </Text>
+              <Text className="text-white text-base flex-1 text-right">
+                {date}
+              </Text>
+            </View>
+            <View className="flex-row items-center bg-app-modal-bg rounded-lg px-4 py-3 mb-2">
+              <Text className="text-white text-base font-semibold flex-1 text-left">
+                Duration
+              </Text>
+              <Text className="text-white text-base flex-1 text-right">
+                {duration} hr{duration !== 1 ? "s" : ""}
+              </Text>
+            </View>
+            <View className="flex-row items-center bg-app-modal-bg rounded-lg px-4 py-3 mb-2">
+              <Text className="text-white text-base font-semibold flex-1 text-left">
+                Total Cost
+              </Text>
+              <Text className="text-white text-base flex-1 text-right">
+                ${totalCost.toFixed(2)}
+              </Text>
+            </View>
+            <View className="flex-row items-center bg-app-modal-bg rounded-lg px-4 py-3 mb-2">
+              <Text className="text-white text-base font-semibold flex-1 text-left">
+                Total Games
+              </Text>
+              <Text className="text-white text-base flex-1 text-right">
+                {pastGames.length}
+              </Text>
+            </View>
+            <View className="flex-row items-center bg-app-modal-bg rounded-lg px-4 py-3 mb-2">
+              <Text className="text-white text-base font-semibold flex-1 text-left">
+                Total Players
+              </Text>
+              <Text className="text-white text-base flex-1 text-right">
+                {playerIds.length}
+              </Text>
+            </View>
+            <View className="flex-row items-center bg-app-modal-bg rounded-lg px-4 py-3 mb-2">
+              <Text className="text-white text-base font-semibold flex-1 text-left">
+                Total Duos
+              </Text>
+              <Text className="text-white text-base flex-1 text-right">
+                {duoIds.length}
+              </Text>
+            </View>
+          </View>
+        </View>
 
-                  const winsB = session?.gamesWonPerPlayer[b] ?? 0;
-                  const playedB = session?.gamesPlayedPerPlayer[b] ?? 0;
-                  const winRateB = playedB > 0 ? winsB / playedB : 0;
-                  return winRateB - winRateA;
-                })
-                .map((playerId) => {
-                  const wins = session?.gamesWonPerPlayer[playerId] ?? 0;
-                  const played = session?.gamesPlayedPerPlayer[playerId] ?? 0;
+        {/* Tabs */}
+        <View className="flex-row mb-6">
+          {TABS.map((tab) => (
+            <TouchableOpacity
+              key={tab}
+              className={`flex-1 py-3 rounded-t-lg items-center ${
+                selectedTab === tab
+                  ? "bg-app-primary"
+                  : "bg-app-modal-bg border-b-2 border-app-primary"
+              }`}
+              onPress={() => setSelectedTab(tab)}
+            >
+              <Text
+                className={`text-base font-bold ${
+                  selectedTab === tab ? "text-white" : "text-app-primary"
+                }`}
+              >
+                {tab}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {/* Tab Content */}
+        <View>
+          {selectedTab === "Games" && (
+            <View className="space-y-3 pb-8">
+              {!pastGames || pastGames.length === 0 ? (
+                <View className="items-center justify-center py-12">
+                  <Text className="text-app-text-muted text-base text-center">
+                    There are no games to display
+                  </Text>
+                </View>
+              ) : (
+                pastGames.map((game) => (
+                  <GameCard
+                    key={game.id}
+                    gameId={game.id}
+                    sessionId={sessionId as string}
+                    isActive={false}
+                  />
+                ))
+              )}
+            </View>
+          )}
+
+          {selectedTab === "Players" && (
+            <View className="space-y-3 pb-8">
+              {playerIds.length === 0 ? (
+                <View className="items-center justify-center py-12">
+                  <Text className="text-app-text-muted text-base text-center">
+                    There are no players to display
+                  </Text>
+                </View>
+              ) : (
+                playerIds.map((playerId) => {
+                  const wins = gamesWonPerPlayer[playerId] ?? 0;
+                  const played = gamesPlayedPerPlayer[playerId] ?? 0;
                   const losses = played - wins;
                   const isBenched =
                     session?.players?.[playerId]?.isBenched ?? false;
@@ -170,71 +261,41 @@ export default function CurrentSessionScreen() {
                       }}
                     />
                   );
-                })}
-            </View>
-          )}
-        </View>
-
-        {/* Duos Accordion */}
-        <View className="mb-8">
-          <TouchableOpacity
-            className="flex-row items-center justify-between mb-4"
-            onPress={() => setDuosExpanded((prev) => !prev)}
-            activeOpacity={0.7}
-          >
-            <Text className="text-white text-xl font-bold">
-              Duos ({duoIds?.length})
-            </Text>
-            <Ionicons
-              name={duosExpanded ? "chevron-up" : "chevron-down"}
-              size={22}
-              color="#fff"
-            />
-          </TouchableOpacity>
-          {duosExpanded && (
-            <View className="space-y-3">
-              {[...(duoIds ?? [])]
-                .sort((a, b) => {
-                  const winsA = session?.gamesWonPerDuo[a] ?? 0;
-                  const winsB = session?.gamesWonPerDuo[b] ?? 0;
-                  return winsB - winsA;
                 })
-                .map((duoId) => {
-                  const wins = session?.gamesWonPerDuo[duoId] ?? 0;
-                  const played = session?.gamesPlayedPerDuo[duoId] ?? 0;
-                  const losses = played - wins;
-                  return (
-                    <DuoCard
-                      key={duoId}
-                      id={duoId}
-                      wins={wins}
-                      losses={losses}
-                    />
-                  );
-                })}
+              )}
             </View>
           )}
-        </View>
 
-        <View className="space-y-3 pb-8">
-          <Text className="text-white text-xl font-bold mb-4">
-            Games ({pastGames?.length})
-          </Text>
-          {!pastGames || pastGames.length === 0 ? (
-            <View className="items-center justify-center py-12">
-              <Text className="text-app-text-muted text-base text-center">
-                There are no games to display
-              </Text>
+          {selectedTab === "Duos" && (
+            <View className="space-y-3 pb-8">
+              {duoIds.length === 0 ? (
+                <View className="items-center justify-center py-12">
+                  <Text className="text-app-text-muted text-base text-center">
+                    There are no duos to display
+                  </Text>
+                </View>
+              ) : (
+                duoIds
+                  .sort((a, b) => {
+                    const winsA = gamesWonPerDuo[a] ?? 0;
+                    const winsB = gamesWonPerDuo[b] ?? 0;
+                    return winsB - winsA;
+                  })
+                  .map((duoId) => {
+                    const wins = gamesWonPerDuo[duoId] ?? 0;
+                    const played = gamesPlayedPerDuo[duoId] ?? 0;
+                    const losses = played - wins;
+                    return (
+                      <DuoCard
+                        key={duoId}
+                        id={duoId}
+                        wins={wins}
+                        losses={losses}
+                      />
+                    );
+                  })
+              )}
             </View>
-          ) : (
-            pastGames.map((game) => (
-              <GameCard
-                key={game.id}
-                gameId={game.id}
-                sessionId={sessionId as string}
-                isActive={false}
-              />
-            ))
           )}
         </View>
       </View>

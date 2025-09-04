@@ -22,21 +22,28 @@ const playerStoreCreator: StateCreator<PlayerStore> = (set, get) => ({
       losses: 0,
       rp: 0,
     };
-    set((state: PlayerStore) => ({ players: [...state.players, newPlayer] }));
+    set((state: PlayerStore) => ({
+      players: [...state.players, newPlayer].sort((a, b) =>
+        a.name.localeCompare(b.name)
+      ),
+    }));
     return newPlayer;
   },
   updatePlayer: (id: string, player: Partial<Player>) =>
     set((state: PlayerStore) => ({
-      players: state.players.map((p: Player) =>
-        p.id === id ? { ...p, ...player } : p
-      ),
+      players: state.players
+        .map((p: Player) => (p.id === id ? { ...p, ...player } : p))
+        .sort((a, b) => a.name.localeCompare(b.name)),
     })),
   removePlayer: (id: string) =>
     set((state: PlayerStore) => ({
       players: state.players.filter((p: Player) => p.id !== id),
     })),
   getPlayerById: (id: string) => get().players.find((p: Player) => p.id === id),
-  importPlayers: (players: Player[]) => set({ players }),
+  importPlayers: (players: Player[]) =>
+    set({
+      players: [...players].sort((a, b) => a.name.localeCompare(b.name)),
+    }),
 });
 
 export const usePlayerStore = create<PlayerStore>()(

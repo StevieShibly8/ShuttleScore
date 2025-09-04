@@ -120,7 +120,7 @@ export const StartSessionModal = ({
   const [showAddPlayer, setShowAddPlayer] = useState(false);
   const [newPlayerName, setNewPlayerName] = useState("");
   const [search, setSearch] = useState("");
-  const [duration, setDuration] = useState<number>(1);
+  const [duration, setDuration] = useState<number>(2);
   const [customDuration, setCustomDuration] = useState<string>("");
 
   const togglePlayer = (playerId: string) => {
@@ -158,9 +158,9 @@ export const StartSessionModal = ({
         if (!getDuoById(duoId)) {
           const newDuo = addDuo(sortedPlayerIds);
           setSelectedDuoIds((prev) => {
-            const bothSelected =
-              [...selectedPlayerIds, newPlayer.id].includes(player.id) &&
-              [...selectedPlayerIds, newPlayer.id].includes(newPlayer.id);
+            const bothSelected = [...selectedPlayerIds, newPlayer.id].includes(
+              player.id
+            );
             return bothSelected ? [...prev, newDuo.id] : prev;
           });
         }
@@ -179,7 +179,7 @@ export const StartSessionModal = ({
     setSelectedPlayerIds([]);
     setSelectedDuoIds([]);
     setCustomDuration("");
-    setDuration(1);
+    setDuration(2);
   };
 
   const handleCancel = () => {

@@ -49,12 +49,65 @@ const PlayerRow = ({
   </TouchableOpacity>
 );
 
+const AddPlayerRow = ({
+  show,
+  value,
+  onChange,
+  onAdd,
+  onCancel,
+  onShow,
+  onInputFocus,
+  onInputBlur,
+}: {
+  show: boolean;
+  value: string;
+  onChange: (text: string) => void;
+  onAdd: () => void;
+  onCancel: () => void;
+  onShow: () => void;
+  onInputFocus?: () => void;
+  onInputBlur?: () => void;
+}) =>
+  show ? (
+    <View className="flex-row items-center py-5 mt-2 gap-2">
+      <TextInput
+        className="flex-1 border border-app-primary rounded-lg px-3 py-2 text-base text-app-text-primary bg-app-modal-bg"
+        placeholder="Enter player name"
+        placeholderTextColor="#aaa"
+        value={value}
+        onChangeText={onChange}
+        autoFocus
+        onFocus={onInputFocus}
+        onBlur={onInputBlur}
+      />
+      <TouchableOpacity
+        className="px-4 py-2 bg-app-primary rounded-lg"
+        onPress={onAdd}
+      >
+        <Text className="text-app-white font-semibold">Add</Text>
+      </TouchableOpacity>
+      <TouchableOpacity className="px-2 py-2 ml-1" onPress={onCancel}>
+        <Text className="text-app-primary font-semibold">Cancel</Text>
+      </TouchableOpacity>
+    </View>
+  ) : (
+    <TouchableOpacity
+      className="flex-row items-center justify-center py-4 mt-2 rounded-lg border border-dashed border-app-primary"
+      onPress={onShow}
+    >
+      <Text className="text-app-primary text-base font-semibold">
+        + Add New Player
+      </Text>
+    </TouchableOpacity>
+  );
+
 export const AddPlayersModal = ({ visible, onClose }: AddPlayersModalProps) => {
   const players = usePlayerStore((state) => state.players);
   const session = useSessionStore((state) => state.getCurrentSession());
   const addPlayersToSession = useSessionStore(
     (state) => state.addPlayersToSession
   );
+  const addPlayer = usePlayerStore((state) => state.addPlayer);
   const addDuo = useDuoStore((state) => state.addDuo);
   const getDuoById = useDuoStore((state) => state.getDuoById);
 
@@ -66,6 +119,8 @@ export const AddPlayersModal = ({ visible, onClose }: AddPlayersModalProps) => {
   const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>([]);
   const [selectedDuoIds, setSelectedDuoIds] = useState<string[]>([]);
   const [search, setSearch] = useState("");
+  const [showAddPlayer, setShowAddPlayer] = useState(false);
+  const [newPlayerName, setNewPlayerName] = useState("");
 
   // Helper to get all duos between selected and existing players
   const computeSelectedDuoIds = (selectedIds: string[]) => {
@@ -98,16 +153,42 @@ export const AddPlayersModal = ({ visible, onClose }: AddPlayersModalProps) => {
     });
   };
 
+  // Add new player logic (with duo creation and selection)
+  const handleAddPlayer = () => {
+    if (!newPlayerName.trim()) return;
+    const newPlayer = addPlayer(newPlayerName.trim());
+
+    // Create duos between the new player and every other player in the store (except itself)
+    players.forEach((player) => {
+      if (player.id !== newPlayer.id) {
+        const sortedPlayerIds = [newPlayer.id, player.id].sort();
+        const duoId = sortedPlayerIds.join("-");
+        if (!getDuoById(duoId)) addDuo(sortedPlayerIds);
+      }
+    });
+
+    // Update selected players and duos
+    const updatedSelected = [...selectedPlayerIds, newPlayer.id];
+    setSelectedPlayerIds(updatedSelected);
+    setSelectedDuoIds(computeSelectedDuoIds(updatedSelected));
+    setNewPlayerName("");
+    setShowAddPlayer(false);
+  };
+
   const handleAddPlayers = () => {
     addPlayersToSession(selectedPlayerIds, selectedDuoIds);
     setSelectedPlayerIds([]);
     setSelectedDuoIds([]);
+    setShowAddPlayer(false);
+    setNewPlayerName("");
     onClose();
   };
 
   const handleCancel = () => {
     setSelectedPlayerIds([]);
     setSelectedDuoIds([]);
+    setShowAddPlayer(false);
+    setNewPlayerName("");
     onClose();
   };
 
@@ -151,6 +232,26 @@ export const AddPlayersModal = ({ visible, onClose }: AddPlayersModalProps) => {
             )}
           </ScrollView>
 
+          {/* Add Player input/button always at the bottom */}
+          <View className="mb-2">
+            <AddPlayerRow
+              show={showAddPlayer}
+              value={newPlayerName}
+              onChange={setNewPlayerName}
+              onAdd={handleAddPlayer}
+              onCancel={() => {
+                setShowAddPlayer(false);
+                setNewPlayerName("");
+              }}
+              onShow={() => setShowAddPlayer(true)}
+            />
+          </View>
+
+          <Text className="text-center mb-6 text-sm text-app-text-muted">
+            {selectedPlayerIds.length} player
+            {selectedPlayerIds.length === 1 ? "" : "s"} selected
+          </Text>
+
           <View className="mb-4">
             <View style={{ position: "relative", justifyContent: "center" }}>
               <MaterialIcons
@@ -170,7 +271,7 @@ export const AddPlayersModal = ({ visible, onClose }: AddPlayersModalProps) => {
                 placeholderTextColor="#aaa"
                 value={search}
                 onChangeText={setSearch}
-                style={{ paddingLeft: 36 }} // add left padding for the icon
+                style={{ paddingLeft: 36 }}
               />
               {search.length > 0 && (
                 <TouchableOpacity
@@ -190,11 +291,6 @@ export const AddPlayersModal = ({ visible, onClose }: AddPlayersModalProps) => {
               )}
             </View>
           </View>
-
-          <Text className="text-center mb-6 text-sm text-app-text-muted">
-            {selectedPlayerIds.length} player
-            {selectedPlayerIds.length === 1 ? "" : "s"} selected
-          </Text>
 
           <View className="flex-row gap-4">
             <TouchableOpacity
