@@ -67,6 +67,7 @@ const sessionStoreCreator: StateCreator<SessionStore> = (set, get) => ({
       priorityPickPlayerIds: [],
       isSessionActive: true,
       sessionDuration,
+      miscCosts: [],
     };
     set((state: SessionStore) => ({
       sessions: [...state.sessions, newSession],
@@ -179,7 +180,8 @@ const sessionStoreCreator: StateCreator<SessionStore> = (set, get) => ({
     const updatedGamesPlayedPerPlayer = { ...session.gamesPlayedPerPlayer };
     const updatedGamesWonPerPlayer = { ...session.gamesWonPerPlayer };
     playerIds.forEach((pid) => {
-      if (!(pid in updatedGamesPlayedPerPlayer)) updatedGamesPlayedPerPlayer[pid] = 0;
+      if (!(pid in updatedGamesPlayedPerPlayer))
+        updatedGamesPlayedPerPlayer[pid] = 0;
       if (!(pid in updatedGamesWonPerPlayer)) updatedGamesWonPerPlayer[pid] = 0;
     });
 

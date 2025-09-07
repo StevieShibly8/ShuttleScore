@@ -1,4 +1,5 @@
 import { DuoCard } from "@/components/DuoCard";
+import { EditSessionModal } from "@/components/EditSessionModal";
 import { GameCard } from "@/components/GameCard";
 import { PlayerCard } from "@/components/PlayerCard";
 import { usePlayerStore } from "@/stores/playerStore";
@@ -18,6 +19,7 @@ export default function SessionDetailsScreen() {
   );
   const getPlayerById = usePlayerStore((state) => state.getPlayerById);
 
+  const [showEditSessionModal, setShowEditSessionModal] = useState(false);
   const [selectedTab, setSelectedTab] = useState<TabType>("Games");
 
   const date = session?.date ?? "Unknown Date";
@@ -25,7 +27,12 @@ export default function SessionDetailsScreen() {
   const playerIds = session?.players ? Object.keys(session.players) : [];
   const duoIds = session?.duoIds ?? [];
   const duration = session?.sessionDuration ?? 2;
-  const totalCost = duration * 25;
+
+  const sessionCost = duration * 25;
+  const miscCosts = session?.miscCosts ?? [];
+  const totalMiscCost = miscCosts.reduce((sum, mc) => sum + mc.amount, 0);
+  const totalCost = sessionCost + totalMiscCost;
+
   const gamesPlayedPerPlayer = session?.gamesPlayedPerPlayer ?? {};
   const gamesWonPerPlayer = session?.gamesWonPerPlayer ?? {};
   const gamesPlayedPerDuo = session?.gamesPlayedPerDuo ?? {};
@@ -69,6 +76,12 @@ export default function SessionDetailsScreen() {
             <Ionicons name="arrow-back" size={28} color="#fff" />
           </TouchableOpacity>
           <View className="flex-1" />
+          <TouchableOpacity
+            className="bg-app-secondary py-3 px-4 rounded-xl-plus items-center shadow-lg"
+            onPress={() => setShowEditSessionModal(true)}
+          >
+            <Text className="text-white font-bold">Edit</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Session Details Header */}
@@ -102,14 +115,6 @@ export default function SessionDetailsScreen() {
             </View>
             <View className="flex-row items-center bg-app-modal-bg rounded-lg px-4 py-3 mb-2">
               <Text className="text-white text-base font-semibold flex-1 text-left">
-                Total Cost
-              </Text>
-              <Text className="text-white text-base flex-1 text-right">
-                ${totalCost.toFixed(2)}
-              </Text>
-            </View>
-            <View className="flex-row items-center bg-app-modal-bg rounded-lg px-4 py-3 mb-2">
-              <Text className="text-white text-base font-semibold flex-1 text-left">
                 Total Games
               </Text>
               <Text className="text-white text-base flex-1 text-right">
@@ -135,6 +140,45 @@ export default function SessionDetailsScreen() {
           </View>
         </View>
 
+        {/* Cost Summary */}
+        <View className="mb-8">
+          <Text className="text-xl text-white font-bold mb-3">
+            Cost Summary
+          </Text>
+          <View>
+            <View className="flex-row items-center bg-app-modal-bg rounded-lg px-4 py-3 mb-2">
+              <Text className="text-white text-base font-semibold flex-1 text-left">
+                Session Cost
+              </Text>
+              <Text className="text-white text-base flex-1 text-right">
+                ${sessionCost.toFixed(2)}
+              </Text>
+            </View>
+            {miscCosts.map((mc, index) => (
+              <View
+                key={index}
+                className="flex-row items-center bg-app-modal-bg rounded-lg px-4 py-3 mb-2"
+              >
+                <Text className="text-white text-base font-semibold flex-1 text-left">
+                  {mc.label}
+                </Text>
+                <Text className="text-white text-base flex-1 text-right">
+                  ${mc.amount.toFixed(2)}
+                </Text>
+              </View>
+            ))}
+            <View className="flex-row items-center bg-app-modal-bg rounded-lg px-4 py-3 mb-2">
+              <Text className="text-white text-base font-semibold flex-1 text-left">
+                Total Cost
+              </Text>
+              <Text className="text-white text-base flex-1 text-right">
+                ${totalCost.toFixed(2)}
+              </Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Owed Amounts */}
         <View className="mb-8">
           <Text className="text-xl text-white font-bold mb-3">
             Owed Amounts
@@ -287,6 +331,11 @@ export default function SessionDetailsScreen() {
           )}
         </View>
       </View>
+      <EditSessionModal
+        visible={showEditSessionModal}
+        onClose={() => setShowEditSessionModal(false)}
+        sessionId={sessionId as string}
+      />
     </ScrollView>
   );
 }

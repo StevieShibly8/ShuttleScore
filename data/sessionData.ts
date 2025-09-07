@@ -14,4 +14,5 @@ export interface Session {
   priorityPickPlayerIds: string[];
   isSessionActive: boolean;
   sessionDuration: number;
+  miscCosts: { label: string; amount: number }[];
 }
