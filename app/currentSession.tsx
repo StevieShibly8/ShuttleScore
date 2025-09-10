@@ -7,13 +7,14 @@ import { StartGameModal } from "@/components/StartGameModal";
 import { Duo } from "@/data/duoData";
 import { Team } from "@/data/gameData";
 import { useDuoStore } from "@/stores/duoStore";
+import { usePlayerStore } from "@/stores/playerStore";
 import { useSessionStore } from "@/stores/sessionStore";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 
-const TABS = ["Games", "Players", "Duos"] as const;
+const TABS = ["Players", "Duos", "Games"] as const;
 type TabType = (typeof TABS)[number];
 
 export default function CurrentSessionScreen() {
@@ -22,13 +23,14 @@ export default function CurrentSessionScreen() {
     state.getSessionById(sessionId as string)
   );
   const addGameToSession = useSessionStore((state) => state.addGameToSession);
+  const getPlayerById = usePlayerStore((state) => state.getPlayerById);
   const getDuoById = useDuoStore((state) => state.getDuoById);
   const addDuo = useDuoStore((state) => state.addDuo);
   const endSession = useSessionStore((state) => state.endSession);
   const updatePlayerBenchStatus = useSessionStore(
     (state) => state.updatePlayerBenchStatus
   );
-  const [selectedTab, setSelectedTab] = useState<TabType>("Games");
+  const [selectedTab, setSelectedTab] = useState<TabType>("Players");
   const [modalVisible, setModalVisible] = useState(false);
   const [showEndSessionModal, setShowEndSessionModal] = useState(false);
   const [showAddPlayerModal, setShowAddPlayerModal] = useState(false);
@@ -38,7 +40,6 @@ export default function CurrentSessionScreen() {
   const playerIds = session?.players ? Object.keys(session.players) : [];
   const duoIds = session?.duoIds ?? [];
   const duration = session?.sessionDuration ?? 2;
-  const totalCost = duration * 25;
   const gamesPlayedPerPlayer = session?.gamesPlayedPerPlayer ?? {};
   const gamesWonPerPlayer = session?.gamesWonPerPlayer ?? {};
   const gamesPlayedPerDuo = session?.gamesPlayedPerDuo ?? {};
@@ -149,14 +150,6 @@ export default function CurrentSessionScreen() {
             </View>
             <View className="flex-row items-center bg-app-modal-bg rounded-lg px-4 py-3 mb-2">
               <Text className="text-white text-base font-semibold flex-1 text-left">
-                Total Cost
-              </Text>
-              <Text className="text-white text-base flex-1 text-right">
-                ${totalCost.toFixed(2)}
-              </Text>
-            </View>
-            <View className="flex-row items-center bg-app-modal-bg rounded-lg px-4 py-3 mb-2">
-              <Text className="text-white text-base font-semibold flex-1 text-left">
                 Total Games
               </Text>
               <Text className="text-white text-base flex-1 text-right">
@@ -207,27 +200,6 @@ export default function CurrentSessionScreen() {
 
         {/* Tab Content */}
         <View>
-          {selectedTab === "Games" && (
-            <View className="space-y-3 pb-8">
-              {!pastGames || pastGames.length === 0 ? (
-                <View className="items-center justify-center py-12">
-                  <Text className="text-app-text-muted text-base text-center">
-                    There are no games to display
-                  </Text>
-                </View>
-              ) : (
-                pastGames.map((game) => (
-                  <GameCard
-                    key={game.id}
-                    gameId={game.id}
-                    sessionId={sessionId as string}
-                    isActive={false}
-                  />
-                ))
-              )}
-            </View>
-          )}
-
           {selectedTab === "Players" && (
             <View className="space-y-3 pb-8">
               {playerIds.length === 0 ? (
@@ -237,31 +209,41 @@ export default function CurrentSessionScreen() {
                   </Text>
                 </View>
               ) : (
-                playerIds.map((playerId) => {
-                  const wins = gamesWonPerPlayer[playerId] ?? 0;
-                  const played = gamesPlayedPerPlayer[playerId] ?? 0;
-                  const losses = played - wins;
-                  const isBenched =
-                    session?.players?.[playerId]?.isBenched ?? false;
+                playerIds
+                  .sort((a, b) => {
+                    const nameA =
+                      getPlayerById(a)?.name?.toLowerCase() ?? "unknown";
+                    const nameB =
+                      getPlayerById(b)?.name?.toLowerCase() ?? "unknown";
+                    if (nameA < nameB) return -1;
+                    if (nameA > nameB) return 1;
+                    return 0;
+                  })
+                  .map((playerId) => {
+                    const wins = gamesWonPerPlayer[playerId] ?? 0;
+                    const played = gamesPlayedPerPlayer[playerId] ?? 0;
+                    const losses = played - wins;
+                    const isBenched =
+                      session?.players?.[playerId]?.isBenched ?? false;
 
-                  return (
-                    <PlayerCard
-                      key={playerId}
-                      id={playerId}
-                      wins={wins}
-                      losses={losses}
-                      showBenchButton={true}
-                      isBenched={isBenched}
-                      onBenchPress={() => {
-                        updatePlayerBenchStatus(
-                          sessionId as string,
-                          playerId,
-                          !isBenched
-                        );
-                      }}
-                    />
-                  );
-                })
+                    return (
+                      <PlayerCard
+                        key={playerId}
+                        id={playerId}
+                        wins={wins}
+                        losses={losses}
+                        showBenchButton={true}
+                        isBenched={isBenched}
+                        onBenchPress={() => {
+                          updatePlayerBenchStatus(
+                            sessionId as string,
+                            playerId,
+                            !isBenched
+                          );
+                        }}
+                      />
+                    );
+                  })
               )}
             </View>
           )}
@@ -294,6 +276,27 @@ export default function CurrentSessionScreen() {
                       />
                     );
                   })
+              )}
+            </View>
+          )}
+
+          {selectedTab === "Games" && (
+            <View className="space-y-3 pb-8">
+              {!pastGames || pastGames.length === 0 ? (
+                <View className="items-center justify-center py-12">
+                  <Text className="text-app-text-muted text-base text-center">
+                    There are no games to display
+                  </Text>
+                </View>
+              ) : (
+                pastGames.map((game) => (
+                  <GameCard
+                    key={game.id}
+                    gameId={game.id}
+                    sessionId={sessionId as string}
+                    isActive={false}
+                  />
+                ))
               )}
             </View>
           )}

@@ -9,7 +9,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 
-const TABS = ["Games", "Players", "Duos"] as const;
+const TABS = ["Players", "Duos", "Games"] as const;
 type TabType = (typeof TABS)[number];
 
 export default function SessionDetailsScreen() {
@@ -20,7 +20,7 @@ export default function SessionDetailsScreen() {
   const getPlayerById = usePlayerStore((state) => state.getPlayerById);
 
   const [showEditSessionModal, setShowEditSessionModal] = useState(false);
-  const [selectedTab, setSelectedTab] = useState<TabType>("Games");
+  const [selectedTab, setSelectedTab] = useState<TabType>("Players");
 
   const date = session?.date ?? "Unknown Date";
   const pastGames = session?.pastGames ?? [];
@@ -181,7 +181,7 @@ export default function SessionDetailsScreen() {
         {/* Owed Amounts */}
         <View className="mb-8">
           <Text className="text-xl text-white font-bold mb-3">
-            Owed Amounts
+            Amounts Owed:
           </Text>
           <View>
             {playerIds
@@ -239,27 +239,6 @@ export default function SessionDetailsScreen() {
 
         {/* Tab Content */}
         <View>
-          {selectedTab === "Games" && (
-            <View className="space-y-3 pb-8">
-              {pastGames.length === 0 ? (
-                <View className="items-center justify-center py-12">
-                  <Text className="text-app-text-muted text-base text-center">
-                    There are no games to display
-                  </Text>
-                </View>
-              ) : (
-                pastGames.map((game) => (
-                  <GameCard
-                    key={game.id}
-                    gameId={game.id}
-                    sessionId={sessionId as string}
-                    isActive={false}
-                  />
-                ))
-              )}
-            </View>
-          )}
-
           {selectedTab === "Players" && (
             <View className="space-y-3 pb-8">
               {playerIds.length === 0 ? (
@@ -326,6 +305,27 @@ export default function SessionDetailsScreen() {
                       />
                     );
                   })
+              )}
+            </View>
+          )}
+
+          {selectedTab === "Games" && (
+            <View className="space-y-3 pb-8">
+              {pastGames.length === 0 ? (
+                <View className="items-center justify-center py-12">
+                  <Text className="text-app-text-muted text-base text-center">
+                    There are no games to display
+                  </Text>
+                </View>
+              ) : (
+                pastGames.map((game) => (
+                  <GameCard
+                    key={game.id}
+                    gameId={game.id}
+                    sessionId={sessionId as string}
+                    isActive={false}
+                  />
+                ))
               )}
             </View>
           )}
