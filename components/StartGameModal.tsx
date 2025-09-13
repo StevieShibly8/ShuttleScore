@@ -157,12 +157,12 @@ export const StartGameModal = ({
     15: 21,
     21: 30,
   };
-  const maxCap = 30;
   const [pointCap, setPointCap] = useState<number>(defaultPointCaps[15]);
 
   // Update pointCap when gamePoint changes
   useEffect(() => {
-    setPointCap(defaultPointCaps[gamePoint] ?? Math.max(gamePoint, maxCap));
+    setPointCap(defaultPointCaps[gamePoint]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gamePoint]);
 
   const session = useSessionStore((state) => state.getSessionById(sessionId));
