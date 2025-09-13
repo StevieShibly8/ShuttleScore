@@ -1,5 +1,6 @@
 import { usePlayerStore } from "@/stores/playerStore";
 import { useSessionStore } from "@/stores/sessionStore";
+import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useEffect, useState } from "react";
 import { Modal, ScrollView, Text, TouchableOpacity, View } from "react-native";
 
@@ -16,126 +17,76 @@ interface StartGameModalProps {
   sessionId: string;
 }
 
-function randomizeTeams({
-  activePlayerIds,
+function randomizeTeam({
+  availablePlayerIds,
   gamesPlayedPerPlayer,
   gamesPlayedPerDuo,
-  priorityPickPlayerIds,
 }: {
-  activePlayerIds: string[];
+  availablePlayerIds: string[];
   gamesPlayedPerPlayer: Record<string, number>;
   gamesPlayedPerDuo: Record<string, number>;
-  priorityPickPlayerIds: string[];
-}) {
-  let teamAPlayerIds: string[] = [];
-  let teamBPlayerIds: string[] = [];
-  let remaining: string[] = [...activePlayerIds];
+}): string[] {
+  let selectedPlayerIDs: string[] = [];
+  let leastPlayedPlayerIDs: string[] = [...availablePlayerIds];
 
-  // If more than 7 players, ignore priority picks
-  if (activePlayerIds.length > 7) {
-    priorityPickPlayerIds = [];
-  }
+  // Step 1: Least games played logic
+  for (let i = 0; i < 2 && selectedPlayerIDs.length < 2; i++) {
+    const minGames = Math.min(
+      ...leastPlayedPlayerIDs.map((id) => gamesPlayedPerPlayer[id] ?? 0)
+    );
+    const minPlayerIDs = leastPlayedPlayerIDs.filter(
+      (id) => (gamesPlayedPerPlayer[id] ?? 0) === minGames
+    );
 
-  // 1. Handle priority picks
-  priorityPickPlayerIds = priorityPickPlayerIds.filter((id) =>
-    activePlayerIds.includes(id)
-  );
-
-  if (priorityPickPlayerIds.length === 2) {
-    // Place each on opposite teams
-    teamAPlayerIds.push(priorityPickPlayerIds[0]);
-    teamBPlayerIds.push(priorityPickPlayerIds[1]);
-    remaining = remaining.filter((id) => !priorityPickPlayerIds.includes(id));
-  } else if (priorityPickPlayerIds.length === 1) {
-    // Place the one on a random team
-    if (Math.random() < 0.5) {
-      teamAPlayerIds.push(priorityPickPlayerIds[0]);
+    if (minPlayerIDs.length === 1) {
+      selectedPlayerIDs.push(minPlayerIDs[0]);
+      leastPlayedPlayerIDs = leastPlayedPlayerIDs.filter(
+        (id) => id !== minPlayerIDs[0]
+      );
+      if (selectedPlayerIDs.length === 2) return selectedPlayerIDs;
+    } else if (minPlayerIDs.length === 2 && selectedPlayerIDs.length === 0) {
+      selectedPlayerIDs.push(...minPlayerIDs);
+      return selectedPlayerIDs;
     } else {
-      teamBPlayerIds.push(priorityPickPlayerIds[0]);
-    }
-    remaining = remaining.filter((id) => id !== priorityPickPlayerIds[0]);
-  }
-
-  // 2. Find players with the least games played
-  const minGames = Math.min(
-    ...remaining.map((id) => gamesPlayedPerPlayer[id] ?? 0)
-  );
-  let leastPlayed = remaining.filter(
-    (id) => (gamesPlayedPerPlayer[id] ?? 0) === minGames
-  );
-
-  // Shuffle leastPlayed for randomness
-  leastPlayed = leastPlayed.sort(() => Math.random() - 0.5);
-
-  // Fill up teams with least played players
-  for (const id of leastPlayed) {
-    if (teamAPlayerIds.length < 2) teamAPlayerIds.push(id);
-    else if (teamBPlayerIds.length < 2) teamBPlayerIds.push(id);
-    if (teamAPlayerIds.length === 2 && teamBPlayerIds.length === 2) break;
-  }
-
-  // If not enough, fill with next least played
-  if (teamAPlayerIds.length < 2 || teamBPlayerIds.length < 2) {
-    const others = remaining.filter((id) => !leastPlayed.includes(id));
-    const shuffled = others.sort(() => Math.random() - 0.5);
-    for (const id of shuffled) {
-      if (teamAPlayerIds.length < 2) teamAPlayerIds.push(id);
-      else if (teamBPlayerIds.length < 2) teamBPlayerIds.push(id);
-      if (teamAPlayerIds.length === 2 && teamBPlayerIds.length === 2) break;
+      leastPlayedPlayerIDs = minPlayerIDs;
+      break;
     }
   }
 
-  // 3. Check for duo fairness
-  // Get all possible duos from the selected 4 players
-  const allCombos = [
-    [teamAPlayerIds[0], teamAPlayerIds[1]],
-    [teamBPlayerIds[0], teamBPlayerIds[1]],
-  ].map((duo) => duo.slice().sort().join("-"));
-
-  const currentDuoGames = allCombos.map(
-    (duoId) => gamesPlayedPerDuo[duoId] ?? 0
-  );
-  const maxCurrentDuoGames = Math.max(...currentDuoGames);
-
-  // Now, check if any other possible duo among these 4 would have a lower games played
-  const allPlayers = [...teamAPlayerIds, ...teamBPlayerIds];
-  let bestDuoPair = null;
-  let minMaxGames = maxCurrentDuoGames;
-
-  // Generate all possible splits of 4 players into two teams of 2
-  const splits = [
-    [
-      [allPlayers[0], allPlayers[1]],
-      [allPlayers[2], allPlayers[3]],
-    ],
-    [
-      [allPlayers[0], allPlayers[2]],
-      [allPlayers[1], allPlayers[3]],
-    ],
-    [
-      [allPlayers[0], allPlayers[3]],
-      [allPlayers[1], allPlayers[2]],
-    ],
-  ];
-
-  for (const [[a1, a2], [b1, b2]] of splits) {
-    const duoA = [a1, a2].slice().sort().join("-");
-    const duoB = [b1, b2].slice().sort().join("-");
-    const gamesA = gamesPlayedPerDuo[duoA] ?? 0;
-    const gamesB = gamesPlayedPerDuo[duoB] ?? 0;
-    const maxGames = Math.max(gamesA, gamesB);
-    if (maxGames < minMaxGames) {
-      minMaxGames = maxGames;
-      bestDuoPair = { teamA: [a1, a2], teamB: [b1, b2] };
+  // Step 2: Duo fairness
+  // If we already have 1 selected, only consider duos with that player
+  let duoCandidates: [string, string][] = [];
+  if (selectedPlayerIDs.length === 1) {
+    duoCandidates = leastPlayedPlayerIDs.map((id) => [
+      selectedPlayerIDs[0],
+      id,
+    ]);
+  } else {
+    // All possible pairs from leastPlayedPlayers
+    for (let i = 0; i < leastPlayedPlayerIDs.length; i++) {
+      for (let j = i + 1; j < leastPlayedPlayerIDs.length; j++) {
+        duoCandidates.push([leastPlayedPlayerIDs[i], leastPlayedPlayerIDs[j]]);
+      }
     }
   }
 
-  if (bestDuoPair) {
-    teamAPlayerIds = bestDuoPair.teamA;
-    teamBPlayerIds = bestDuoPair.teamB;
+  // Find the minimum games played among all candidate duos
+  let minDuoGames = Infinity;
+  let minDuos: [string, string][] = [];
+  for (const [a, b] of duoCandidates) {
+    const duoId = [a, b].sort().join("-");
+    const games = gamesPlayedPerDuo[duoId] ?? 0;
+    if (games < minDuoGames) {
+      minDuoGames = games;
+      minDuos = [[a, b]];
+    } else if (games === minDuoGames) {
+      minDuos.push([a, b]);
+    }
   }
 
-  return { teamAPlayerIds, teamBPlayerIds };
+  // Pick one duo randomly if multiple
+  const chosenDuo = minDuos[Math.floor(Math.random() * minDuos.length)];
+  return chosenDuo;
 }
 
 export const StartGameModal = ({
@@ -196,15 +147,29 @@ export const StartGameModal = ({
     }
   };
 
-  const handleRandomize = () => {
+  const handleRandomizeTeamA = () => {
     if (!session) return;
-    const { teamAPlayerIds, teamBPlayerIds } = randomizeTeams({
-      activePlayerIds,
+    const availableForA = activePlayerIds.filter(
+      (id) => !teamBPlayerIds.includes(id)
+    );
+    const teamAPlayerIds = randomizeTeam({
+      availablePlayerIds: availableForA,
       gamesPlayedPerPlayer: session.gamesPlayedPerPlayer,
       gamesPlayedPerDuo: session.gamesPlayedPerDuo,
-      priorityPickPlayerIds: session.priorityPickPlayerIds,
     });
     setTeamAPlayerIds(teamAPlayerIds);
+  };
+
+  const handleRandomizeTeamB = () => {
+    if (!session) return;
+    const availableForB = activePlayerIds.filter(
+      (id) => !teamAPlayerIds.includes(id)
+    );
+    const teamBPlayerIds = randomizeTeam({
+      availablePlayerIds: availableForB,
+      gamesPlayedPerPlayer: session.gamesPlayedPerPlayer,
+      gamesPlayedPerDuo: session.gamesPlayedPerDuo,
+    });
     setTeamBPlayerIds(teamBPlayerIds);
   };
 
@@ -264,6 +229,10 @@ export const StartGameModal = ({
                 </TouchableOpacity>
               ))}
             </View>
+            <Text className="text-sm text-app-text-muted mt-2">
+              The game will end when the game point is reached, unless there is
+              a deuce.
+            </Text>
           </View>
 
           {/* Point Cap Selector */}
@@ -298,17 +267,31 @@ export const StartGameModal = ({
               ))}
             </ScrollView>
             <Text className="text-sm text-app-text-muted mt-2">
-              The game will end at the point cap, even if a 2-point lead is not
-              achieved.
+              Deuce: The game will end with a 2-point lead, or when the point
+              cap is reached.
             </Text>
           </View>
 
           <View className="mb-4 flex-row gap-12">
             {/* Team A Column */}
             <View className="flex-1">
-              <Text className="text-lg font-bold text-app-primary mb-2 text-center">
-                Team A
-              </Text>
+              <TouchableOpacity
+                onPress={handleRandomizeTeamA}
+                className="ml-2"
+                accessibilityLabel="Randomize Team A"
+              >
+                <View className="flex-row items-center justify-center mb-2 gap-4">
+                  <Text className="text-lg font-bold text-app-primary text-center">
+                    Team A
+                  </Text>
+
+                  <MaterialCommunityIcons
+                    name="dice-multiple"
+                    size={30}
+                    color="#3B82F6"
+                  />
+                </View>
+              </TouchableOpacity>
               <ScrollView
                 style={{ maxHeight: 415 }}
                 keyboardShouldPersistTaps="handled"
@@ -357,9 +340,23 @@ export const StartGameModal = ({
 
             {/* Team B Column */}
             <View className="flex-1">
-              <Text className="text-lg font-bold text-app-primary mb-2 text-center">
-                Team B
-              </Text>
+              <TouchableOpacity
+                onPress={handleRandomizeTeamB}
+                className="ml-2"
+                accessibilityLabel="Randomize Team B"
+              >
+                <View className="flex-row items-center justify-center mb-2 gap-4">
+                  <Text className="text-lg font-bold text-app-primary text-center">
+                    Team B
+                  </Text>
+
+                  <MaterialCommunityIcons
+                    name="dice-multiple"
+                    size={30}
+                    color="#3B82F6"
+                  />
+                </View>
+              </TouchableOpacity>
               <ScrollView
                 style={{ maxHeight: 415 }}
                 keyboardShouldPersistTaps="handled"
@@ -442,14 +439,6 @@ export const StartGameModal = ({
               </Text>
             </TouchableOpacity>
           </View>
-          <TouchableOpacity
-            className="w-full py-4 rounded-xl bg-app-secondary items-center mb-4"
-            onPress={handleRandomize}
-          >
-            <Text className="text-app-white text-base font-semibold">
-              Randomize Selection
-            </Text>
-          </TouchableOpacity>
         </View>
       </View>
     </Modal>
