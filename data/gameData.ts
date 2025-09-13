@@ -15,4 +15,6 @@ export interface Game {
   isGameActive: boolean;
   undoqueue: ("A" | "B")[];
   redoqueue: ("A" | "B")[];
+  gamePoint: number;
+  pointCap: number;
 }

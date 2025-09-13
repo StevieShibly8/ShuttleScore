@@ -58,7 +58,9 @@ export default function CurrentSessionScreen() {
 
   const handleStartGame = (
     teamAplayerIds: string[],
-    teamBplayerIds: string[]
+    teamBplayerIds: string[],
+    gamePoint: number,
+    pointCap: number
   ) => {
     const duoA: Duo = getExistingDuo(teamAplayerIds);
     const duoB: Duo = getExistingDuo(teamBplayerIds);
@@ -67,7 +69,13 @@ export default function CurrentSessionScreen() {
     const teamBObj: Team = { duoId: duoB.id, score: 0 };
 
     setModalVisible(false);
-    addGameToSession(sessionId as string, teamAObj, teamBObj);
+    addGameToSession(
+      sessionId as string,
+      teamAObj,
+      teamBObj,
+      gamePoint,
+      pointCap
+    );
 
     router.push({
       pathname: "/currentGame",

@@ -16,7 +16,13 @@ interface SessionStore {
   getSessionById: (id: string) => Session | undefined;
   getCurrentSession: () => Session | undefined;
   endSession: (id: string) => void;
-  addGameToSession: (sessionId: string, teamA: Team, teamB: Team) => Game;
+  addGameToSession: (
+    sessionId: string,
+    teamA: Team,
+    teamB: Team,
+    gamePoint: number,
+    pointCap: number
+  ) => Game;
   getGameById: (sessionId: string, gameId: string) => Game | undefined;
   getCurrentGame: (sessionId: string) => Game | undefined;
   endCurrentGame: (sessionId: string, isGameCompleted: boolean) => void;
@@ -88,7 +94,13 @@ const sessionStoreCreator: StateCreator<SessionStore> = (set, get) => ({
     get().sessions.find((s: Session) => s.id === id),
   getCurrentSession: () =>
     get().sessions.find((s: Session) => s.isSessionActive),
-  addGameToSession: (sessionId: string, teamA: Team, teamB: Team) => {
+  addGameToSession: (
+    sessionId: string,
+    teamA: Team,
+    teamB: Team,
+    gamePoint: number,
+    pointCap: number
+  ) => {
     const newGame: Game = {
       id: uuid.v4() as string,
       teamA,
@@ -101,6 +113,8 @@ const sessionStoreCreator: StateCreator<SessionStore> = (set, get) => ({
       isGameActive: true,
       undoqueue: [],
       redoqueue: [],
+      gamePoint,
+      pointCap,
     };
     get().updateSession(sessionId, { currentGame: newGame });
     return newGame;

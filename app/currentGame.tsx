@@ -60,6 +60,9 @@ export default function GameScreen() {
     ? getPlayerById(duoB.playerIds[1])
     : undefined;
 
+  const gamePoint = game?.gamePoint ?? 21;
+  const pointCap = game?.pointCap ?? 30;
+
   const leftScoreboardX = useSharedValue(0);
   const rightScoreboardX = useSharedValue(0);
 
@@ -108,10 +111,12 @@ export default function GameScreen() {
   const serverIndex = servingScore % 2 === 0 ? 0 : 1;
 
   // Game completion logic
-  const reachedMaxScore = scoreA >= 21 || scoreB >= 21;
-  const reachedMinScoreWithDiff =
-    (scoreA >= 15 || scoreB >= 15) && Math.abs(scoreA - scoreB) >= 2;
-  const isGameComplete: boolean = reachedMaxScore || reachedMinScoreWithDiff;
+  const reachedMaxScore = scoreA >= pointCap || scoreB >= pointCap;
+  const reachedMinScore = scoreA >= gamePoint || scoreB >= gamePoint;
+  const twoPointLead = Math.abs(scoreA - scoreB) >= 2;
+  // Game is complete if max score reached or min score with 2-point lead reached
+  const isGameComplete: boolean =
+    reachedMaxScore || (reachedMinScore && twoPointLead);
 
   const gameStarted = scoreA !== 0 || scoreB !== 0;
 
@@ -234,10 +239,10 @@ export default function GameScreen() {
     const teamAStars = getStarCount(teamAPlayer1.rp ?? 0, teamAPlayer2.rp ?? 0);
     const teamBStars = getStarCount(teamBPlayer1.rp ?? 0, teamBPlayer2.rp ?? 0);
 
+    const starDiffA = teamBStars - teamAStars;
+    const starDiffB = teamAStars - teamBStars;
     if (scoreA > scoreB) {
       // Team A wins
-      const starDiffA = teamBStars - teamAStars;
-      const starDiffB = teamAStars - teamBStars;
       const rpChangeA = getRpChange(starDiffA, true);
       const rpChangeB = getRpChange(starDiffB, false);
 
@@ -259,8 +264,6 @@ export default function GameScreen() {
       });
     } else if (scoreB > scoreA) {
       // Team B wins
-      const starDiffA = teamBStars - teamAStars;
-      const starDiffB = teamAStars - teamBStars;
       const rpChangeA = getRpChange(starDiffA, false);
       const rpChangeB = getRpChange(starDiffB, true);
 

@@ -1,12 +1,17 @@
 import { usePlayerStore } from "@/stores/playerStore";
 import { useSessionStore } from "@/stores/sessionStore";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Modal, ScrollView, Text, TouchableOpacity, View } from "react-native";
 
 interface StartGameModalProps {
   visible: boolean;
   onClose: () => void;
-  onStartGame: (teamAPlayerIds: string[], teamBPlayerIds: string[]) => void;
+  onStartGame: (
+    teamAPlayerIds: string[],
+    teamBPlayerIds: string[],
+    gamePoint: number,
+    pointCap: number
+  ) => void;
   activePlayerIds: string[];
   sessionId: string;
 }
@@ -22,15 +27,16 @@ function randomizeTeams({
   gamesPlayedPerDuo: Record<string, number>;
   priorityPickPlayerIds: string[];
 }) {
+  let teamAPlayerIds: string[] = [];
+  let teamBPlayerIds: string[] = [];
+  let remaining: string[] = [...activePlayerIds];
+
   // If more than 7 players, ignore priority picks
   if (activePlayerIds.length > 7) {
     priorityPickPlayerIds = [];
   }
 
   // 1. Handle priority picks
-  let teamAPlayerIds: string[] = [];
-  let teamBPlayerIds: string[] = [];
-  let remaining: string[] = [...activePlayerIds];
   priorityPickPlayerIds = priorityPickPlayerIds.filter((id) =>
     activePlayerIds.includes(id)
   );
@@ -142,9 +148,31 @@ export const StartGameModal = ({
   const getPlayerById = usePlayerStore((state) => state.getPlayerById);
   const [teamAPlayerIds, setTeamAPlayerIds] = useState<string[]>([]);
   const [teamBPlayerIds, setTeamBPlayerIds] = useState<string[]>([]);
-  const session = useSessionStore((state) => state.getSessionById(sessionId));
+  const [gamePoint, setGamePoint] = useState<number>(15);
 
+  // Point Cap logic
+  const defaultPointCaps: Record<number, number> = {
+    7: 11,
+    11: 15,
+    15: 21,
+    21: 30,
+  };
+  const maxCap = 30;
+  const [pointCap, setPointCap] = useState<number>(defaultPointCaps[15]);
+
+  // Update pointCap when gamePoint changes
+  useEffect(() => {
+    setPointCap(defaultPointCaps[gamePoint] ?? Math.max(gamePoint, maxCap));
+  }, [gamePoint]);
+
+  const session = useSessionStore((state) => state.getSessionById(sessionId));
   const selectionLimit = 2;
+
+  // Only allow point caps >= gamePoint and <= maxCap
+  const pointCapOptions = [];
+  for (let i = gamePoint; i <= defaultPointCaps[gamePoint]; i++) {
+    pointCapOptions.push(i);
+  }
 
   const handleSelect = (playerId: string, team: "A" | "B") => {
     if (team === "A") {
@@ -181,14 +209,18 @@ export const StartGameModal = ({
   };
 
   const handleStartGame = () => {
-    onStartGame(teamAPlayerIds, teamBPlayerIds);
+    onStartGame(teamAPlayerIds, teamBPlayerIds, gamePoint, pointCap);
     setTeamAPlayerIds([]);
     setTeamBPlayerIds([]);
+    setGamePoint(15);
+    setPointCap(defaultPointCaps[15]);
   };
 
   const handleCancel = () => {
     setTeamAPlayerIds([]);
     setTeamBPlayerIds([]);
+    setGamePoint(15);
+    setPointCap(defaultPointCaps[15]);
     onClose();
   };
 
@@ -203,113 +235,178 @@ export const StartGameModal = ({
       <View className="flex-1 bg-app-overlay justify-end">
         <View className="rounded-t-3xl bg-app-modal-bg pt-3 px-5 pb-2">
           <Text className="text-center mt-4 mb-6 text-2xl font-semibold text-app-text-primary">
-            Select 2 Players for Each Team
+            Game Setup
           </Text>
 
-          {/* Team A List */}
+          {/* Game Point Selector */}
           <View className="mb-4">
             <Text className="text-lg font-bold text-app-primary mb-2">
-              Team A
+              Game Point
+            </Text>
+            <View className="flex-row gap-2">
+              {[7, 11, 15, 21].map((point) => (
+                <TouchableOpacity
+                  key={point}
+                  className={`flex-1 py-2 rounded-lg items-center border ${
+                    gamePoint === point
+                      ? "bg-app-primary border-app-primary"
+                      : "bg-transparent border-app-primary"
+                  }`}
+                  onPress={() => setGamePoint(point)}
+                >
+                  <Text
+                    className={`font-semibold ${
+                      gamePoint === point ? "text-white" : "text-app-primary"
+                    }`}
+                  >
+                    {point}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+
+          {/* Point Cap Selector */}
+          <View className="mb-4">
+            <Text className="text-lg font-bold text-app-primary mb-2">
+              Point Cap
             </Text>
             <ScrollView
-              style={{ maxHeight: 264 }}
-              keyboardShouldPersistTaps="handled"
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={{ maxHeight: 48 }}
+              contentContainerStyle={{ flexDirection: "row", gap: 4 }}
             >
-              {activePlayerIds.map((playerId) => {
-                const player = getPlayerById(playerId);
-                if (!player) return null;
-                const selected = teamAPlayerIds.includes(playerId);
-                const disabled =
-                  teamBPlayerIds.includes(playerId) ||
-                  (teamAPlayerIds.length >= selectionLimit && !selected);
-                return (
-                  <TouchableOpacity
-                    key={playerId}
-                    className={`flex-row justify-between items-center py-3 px-1 border-b border-app-modal-border
-          ${selected ? "bg-app-selected" : ""}`}
-                    onPress={() => handleSelect(playerId, "A")}
-                    disabled={disabled}
+              {pointCapOptions.map((cap) => (
+                <TouchableOpacity
+                  key={cap}
+                  className={`py-2 px-4 rounded-lg items-center border ${
+                    pointCap === cap
+                      ? "bg-app-primary border-app-primary"
+                      : "bg-transparent border-app-primary"
+                  }`}
+                  onPress={() => setPointCap(cap)}
+                >
+                  <Text
+                    className={`font-semibold ${
+                      pointCap === cap ? "text-white" : "text-app-primary"
+                    }`}
                   >
-                    <View className="flex-1 gap-0.5">
+                    {cap}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+            <Text className="text-sm text-app-text-muted mt-2">
+              The game will end at the point cap, even if a 2-point lead is not
+              achieved.
+            </Text>
+          </View>
+
+          <View className="mb-4 flex-row gap-12">
+            {/* Team A Column */}
+            <View className="flex-1">
+              <Text className="text-lg font-bold text-app-primary mb-2 text-center">
+                Team A
+              </Text>
+              <ScrollView
+                style={{ maxHeight: 415 }}
+                keyboardShouldPersistTaps="handled"
+              >
+                {activePlayerIds.map((playerId) => {
+                  const player = getPlayerById(playerId);
+                  if (!player) return null;
+                  const selected = teamAPlayerIds.includes(playerId);
+                  const disabled =
+                    teamBPlayerIds.includes(playerId) ||
+                    (teamAPlayerIds.length >= selectionLimit && !selected);
+                  return (
+                    <TouchableOpacity
+                      key={playerId}
+                      className={`flex-row justify-between items-center py-2 px-1 border-b border-app-modal-border
+              ${selected ? "bg-app-selected" : ""}`}
+                      onPress={() => handleSelect(playerId, "A")}
+                      disabled={disabled}
+                    >
                       <Text
                         className={`text-base font-medium ${disabled ? "text-app-text-disabled" : "text-app-text-primary"}`}
                       >
                         {player.name}
                       </Text>
-                    </View>
-                    {!disabled && (
-                      <View
-                        className={`w-6 h-6 mr-2 rounded-full border-2 items-center justify-center
-      ${selected ? "bg-app-selected-border border-app-selected-border" : "border-app-text-muted"}
-    `}
-                      >
-                        {selected && (
-                          <Text className="text-app-white text-sm font-bold">
-                            ✓
-                          </Text>
-                        )}
-                      </View>
-                    )}
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
-          </View>
+                      {!disabled && (
+                        <View
+                          className={`w-6 h-6 rounded-full border-2 items-center justify-center
+                  ${selected ? "bg-app-selected-border border-app-selected-border" : "border-app-text-muted"}
+                `}
+                        >
+                          {selected && (
+                            <Text className="text-app-white text-sm font-bold">
+                              ✓
+                            </Text>
+                          )}
+                        </View>
+                      )}
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+              <Text className="text-center mt-4 text-sm text-app-text-muted">
+                Team A: {teamAPlayerIds.length}/2
+              </Text>
+            </View>
 
-          {/* Team B List */}
-          <View className="mb-4">
-            <Text className="text-lg font-bold text-app-primary mb-2">
-              Team B
-            </Text>
-            <ScrollView
-              style={{ maxHeight: 264 }}
-              keyboardShouldPersistTaps="handled"
-            >
-              {activePlayerIds.map((playerId) => {
-                const player = getPlayerById(playerId);
-                if (!player) return null;
-                const selected = teamBPlayerIds.includes(playerId);
-                const disabled =
-                  teamAPlayerIds.includes(playerId) ||
-                  (teamBPlayerIds.length >= selectionLimit && !selected);
-                return (
-                  <TouchableOpacity
-                    key={playerId}
-                    className={`flex-row justify-between items-center py-3 px-1 border-b border-app-modal-border
-          ${selected ? "bg-app-selected" : ""}`}
-                    onPress={() => handleSelect(playerId, "B")}
-                    disabled={disabled}
-                  >
-                    <View className="flex-1 gap-0.5">
+            {/* Team B Column */}
+            <View className="flex-1">
+              <Text className="text-lg font-bold text-app-primary mb-2 text-center">
+                Team B
+              </Text>
+              <ScrollView
+                style={{ maxHeight: 415 }}
+                keyboardShouldPersistTaps="handled"
+              >
+                {activePlayerIds.map((playerId) => {
+                  const player = getPlayerById(playerId);
+                  if (!player) return null;
+                  const selected = teamBPlayerIds.includes(playerId);
+                  const disabled =
+                    teamAPlayerIds.includes(playerId) ||
+                    (teamBPlayerIds.length >= selectionLimit && !selected);
+                  return (
+                    <TouchableOpacity
+                      key={playerId}
+                      className={`flex-row justify-between items-center py-2 px-1 border-b border-app-modal-border
+              ${selected ? "bg-app-selected" : ""}`}
+                      onPress={() => handleSelect(playerId, "B")}
+                      disabled={disabled}
+                    >
                       <Text
                         className={`text-base font-medium ${disabled ? "text-app-text-disabled" : "text-app-text-primary"}`}
                       >
                         {player.name}
                       </Text>
-                    </View>
-                    {!disabled && (
-                      <View
-                        className={`w-6 h-6 mr-2 rounded-full border-2 items-center justify-center
-      ${selected ? "bg-app-selected-border border-app-selected-border" : "border-app-text-muted"}
-    `}
-                      >
-                        {selected && (
-                          <Text className="text-app-white text-sm font-bold">
-                            ✓
-                          </Text>
-                        )}
-                      </View>
-                    )}
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
+                      {!disabled && (
+                        <View
+                          className={`w-6 h-6 rounded-full border-2 items-center justify-center
+                  ${selected ? "bg-app-selected-border border-app-selected-border" : "border-app-text-muted"}
+                `}
+                        >
+                          {selected && (
+                            <Text className="text-app-white text-sm font-bold">
+                              ✓
+                            </Text>
+                          )}
+                        </View>
+                      )}
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+              <Text className="text-center mt-4 text-sm text-app-text-muted">
+                Team B: {teamBPlayerIds.length}/2
+              </Text>
+            </View>
           </View>
 
-          <Text className="text-center mb-6 text-sm text-app-text-muted">
-            Team A: {teamAPlayerIds.length}/2 Team B: {teamBPlayerIds.length}
-            /2
-          </Text>
           <View className="flex-row gap-4 mb-4">
             <TouchableOpacity
               className="flex-1 py-4 rounded-xl border-2 border-app-primary items-center"
