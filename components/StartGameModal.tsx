@@ -29,7 +29,7 @@ function randomizeTeam({
   let selectedPlayerIDs: string[] = [];
   let leastPlayedPlayerIDs: string[] = [...availablePlayerIds];
 
-  // Step 1: Least games played logic
+  // Step 1:   // Find players with the least games played
   for (let i = 0; i < 2 && selectedPlayerIDs.length < 2; i++) {
     const minGames = Math.min(
       ...leastPlayedPlayerIDs.map((id) => gamesPlayedPerPlayer[id] ?? 0)
@@ -89,6 +89,24 @@ function randomizeTeam({
   return chosenDuo;
 }
 
+function randomizePlayer({
+  availablePlayerIds,
+  gamesPlayedPerPlayer,
+}: {
+  availablePlayerIds: string[];
+  gamesPlayedPerPlayer: Record<string, number>;
+}): string {
+  // Find players with the least games played
+  const minGames = Math.min(
+    ...availablePlayerIds.map((id) => gamesPlayedPerPlayer[id] ?? 0)
+  );
+  const minPlayers = availablePlayerIds.filter(
+    (id) => (gamesPlayedPerPlayer[id] ?? 0) === minGames
+  );
+  // If multiple, pick one randomly
+  return minPlayers[Math.floor(Math.random() * minPlayers.length)];
+}
+
 export const StartGameModal = ({
   visible,
   onClose,
@@ -97,9 +115,13 @@ export const StartGameModal = ({
   sessionId,
 }: StartGameModalProps) => {
   const getPlayerById = usePlayerStore((state) => state.getPlayerById);
-  const [teamAPlayerIds, setTeamAPlayerIds] = useState<string[]>([]);
-  const [teamBPlayerIds, setTeamBPlayerIds] = useState<string[]>([]);
-  const [gamePoint, setGamePoint] = useState<number>(15);
+  const session = useSessionStore((state) => state.getSessionById(sessionId));
+  const selectionLimit = 2;
+
+  // --- NEW: Tab state and logic ---
+  const [tab, setTab] = useState<"singles" | "doubles">("doubles");
+  const [singlesPlayerA, setSinglesPlayerA] = useState<string | null>(null);
+  const [singlesPlayerB, setSinglesPlayerB] = useState<string | null>(null);
 
   // Point Cap logic
   const defaultPointCaps: Record<number, number> = {
@@ -108,7 +130,34 @@ export const StartGameModal = ({
     15: 21,
     21: 30,
   };
-  const [pointCap, setPointCap] = useState<number>(defaultPointCaps[15]);
+
+  // --- NEW: Default gamePoint/pointCap per tab ---
+  const singlesDefaultGamePoint = 11;
+  const singlesDefaultPointCap = defaultPointCaps[11];
+  const doublesDefaultGamePoint = 15;
+  const doublesDefaultPointCap = defaultPointCaps[15];
+
+  const [gamePoint, setGamePoint] = useState<number>(doublesDefaultGamePoint);
+  const [pointCap, setPointCap] = useState<number>(doublesDefaultPointCap);
+
+  // --- NEW: Set tab and defaults on open ---
+  useEffect(() => {
+    if (!visible) return;
+    if (activePlayerIds.length <= 3) {
+      setTab("singles");
+      setGamePoint(singlesDefaultGamePoint);
+      setPointCap(singlesDefaultPointCap);
+    } else {
+      setTab("doubles");
+      setGamePoint(doublesDefaultGamePoint);
+      setPointCap(doublesDefaultPointCap);
+    }
+    setSinglesPlayerA(null);
+    setSinglesPlayerB(null);
+    setTeamAPlayerIds([]);
+    setTeamBPlayerIds([]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visible]);
 
   // Update pointCap when gamePoint changes
   useEffect(() => {
@@ -116,8 +165,8 @@ export const StartGameModal = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gamePoint]);
 
-  const session = useSessionStore((state) => state.getSessionById(sessionId));
-  const selectionLimit = 2;
+  const [teamAPlayerIds, setTeamAPlayerIds] = useState<string[]>([]);
+  const [teamBPlayerIds, setTeamBPlayerIds] = useState<string[]>([]);
 
   // Only allow point caps >= gamePoint and <= maxCap
   const pointCapOptions = [];
@@ -125,24 +174,54 @@ export const StartGameModal = ({
     pointCapOptions.push(i);
   }
 
+  // --- NEW: Randomize for Singles ---
+  const handleRandomizeSinglesA = () => {
+    if (!session) return;
+    const available = activePlayerIds.filter((id) => id !== singlesPlayerB);
+    const playerA = randomizePlayer({
+      availablePlayerIds: available,
+      gamesPlayedPerPlayer: session.gamesPlayedPerPlayer,
+    });
+    setSinglesPlayerA(playerA);
+  };
+  const handleRandomizeSinglesB = () => {
+    if (!session) return;
+    const available = activePlayerIds.filter((id) => id !== singlesPlayerA);
+    const playerB = randomizePlayer({
+      availablePlayerIds: available,
+      gamesPlayedPerPlayer: session.gamesPlayedPerPlayer,
+    });
+    setSinglesPlayerB(playerB);
+  };
+
   const handleSelect = (playerId: string, team: "A" | "B") => {
-    if (team === "A") {
-      if (teamAPlayerIds.includes(playerId)) {
-        setTeamAPlayerIds(teamAPlayerIds.filter((id) => id !== playerId));
-      } else if (
-        teamAPlayerIds.length < selectionLimit &&
-        !teamBPlayerIds.includes(playerId)
-      ) {
-        setTeamAPlayerIds([...teamAPlayerIds, playerId]);
+    if (tab === "singles") {
+      if (team === "A") {
+        setSinglesPlayerA(playerId === singlesPlayerA ? null : playerId);
+        if (playerId === singlesPlayerB) setSinglesPlayerB(null);
+      } else {
+        setSinglesPlayerB(playerId === singlesPlayerB ? null : playerId);
+        if (playerId === singlesPlayerA) setSinglesPlayerA(null);
       }
     } else {
-      if (teamBPlayerIds.includes(playerId)) {
-        setTeamBPlayerIds(teamBPlayerIds.filter((id) => id !== playerId));
-      } else if (
-        teamBPlayerIds.length < selectionLimit &&
-        !teamAPlayerIds.includes(playerId)
-      ) {
-        setTeamBPlayerIds([...teamBPlayerIds, playerId]);
+      if (team === "A") {
+        if (teamAPlayerIds.includes(playerId)) {
+          setTeamAPlayerIds(teamAPlayerIds.filter((id) => id !== playerId));
+        } else if (
+          teamAPlayerIds.length < selectionLimit &&
+          !teamBPlayerIds.includes(playerId)
+        ) {
+          setTeamAPlayerIds([...teamAPlayerIds, playerId]);
+        }
+      } else {
+        if (teamBPlayerIds.includes(playerId)) {
+          setTeamBPlayerIds(teamBPlayerIds.filter((id) => id !== playerId));
+        } else if (
+          teamBPlayerIds.length < selectionLimit &&
+          !teamAPlayerIds.includes(playerId)
+        ) {
+          setTeamBPlayerIds([...teamBPlayerIds, playerId]);
+        }
       }
     }
   };
@@ -174,20 +253,39 @@ export const StartGameModal = ({
   };
 
   const handleStartGame = () => {
-    onStartGame(teamAPlayerIds, teamBPlayerIds, gamePoint, pointCap);
-    setTeamAPlayerIds([]);
-    setTeamBPlayerIds([]);
-    setGamePoint(15);
-    setPointCap(defaultPointCaps[15]);
+    if (tab === "singles") {
+      if (singlesPlayerA && singlesPlayerB) {
+        onStartGame([singlesPlayerA], [singlesPlayerB], gamePoint, pointCap);
+      }
+      setSinglesPlayerA(null);
+      setSinglesPlayerB(null);
+      setGamePoint(singlesDefaultGamePoint);
+      setPointCap(singlesDefaultPointCap);
+    } else {
+      onStartGame(teamAPlayerIds, teamBPlayerIds, gamePoint, pointCap);
+      setTeamAPlayerIds([]);
+      setTeamBPlayerIds([]);
+      setGamePoint(doublesDefaultGamePoint);
+      setPointCap(doublesDefaultPointCap);
+    }
   };
 
   const handleCancel = () => {
     setTeamAPlayerIds([]);
     setTeamBPlayerIds([]);
-    setGamePoint(15);
-    setPointCap(defaultPointCaps[15]);
+    setSinglesPlayerA(null);
+    setSinglesPlayerB(null);
+    setGamePoint(
+      tab === "singles" ? singlesDefaultGamePoint : doublesDefaultGamePoint
+    );
+    setPointCap(
+      tab === "singles" ? singlesDefaultPointCap : doublesDefaultPointCap
+    );
     onClose();
   };
+
+  // --- Tab UI ---
+  const isDoublesDisabled = activePlayerIds.length <= 3;
 
   return (
     <Modal
@@ -203,9 +301,63 @@ export const StartGameModal = ({
             Game Setup
           </Text>
 
+          {/* Tabs */}
+          <View className="flex-row mb-4">
+            <TouchableOpacity
+              className={`flex-1 py-2 rounded-t-xl items-center border-b-2 ${
+                tab === "singles"
+                  ? "border-app-primary bg-app-modal-bg"
+                  : "border-app-modal-border"
+              }`}
+              onPress={() => {
+                setTab("singles");
+                setGamePoint(singlesDefaultGamePoint);
+                setPointCap(singlesDefaultPointCap);
+                setSinglesPlayerA(null);
+                setSinglesPlayerB(null);
+              }}
+            >
+              <Text
+                className={`text-lg font-bold ${
+                  tab === "singles"
+                    ? "text-app-primary"
+                    : "text-app-text-primary"
+                }`}
+              >
+                Singles
+              </Text>
+            </TouchableOpacity>
+            {!isDoublesDisabled && (
+              <TouchableOpacity
+                className={`flex-1 py-2 rounded-t-xl items-center border-b-2 ${
+                  tab === "doubles"
+                    ? "border-app-primary bg-app-modal-bg"
+                    : "border-app-modal-border"
+                }`}
+                onPress={() => {
+                  setTab("doubles");
+                  setGamePoint(doublesDefaultGamePoint);
+                  setPointCap(doublesDefaultPointCap);
+                  setTeamAPlayerIds([]);
+                  setTeamBPlayerIds([]);
+                }}
+              >
+                <Text
+                  className={`text-lg font-bold ${
+                    tab === "doubles"
+                      ? "text-app-primary"
+                      : "text-app-text-primary"
+                  }`}
+                >
+                  Doubles
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
+
           {/* Game Point Selector */}
           <View className="mb-4">
-            <Text className="text-lg font-bold text-app-primary mb-2">
+            <Text className="text-lg font-semibold text-app-text-primary mb-2">
               Game Point
             </Text>
             <View className="flex-row gap-2">
@@ -237,13 +389,12 @@ export const StartGameModal = ({
 
           {/* Point Cap Selector */}
           <View className="mb-4">
-            <Text className="text-lg font-bold text-app-primary mb-2">
+            <Text className="text-lg font-semibold text-app-text-primary mb-2">
               Point Cap
             </Text>
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
-              style={{ maxHeight: 48 }}
               contentContainerStyle={{ flexDirection: "row", gap: 4 }}
             >
               {pointCapOptions.map((cap) => (
@@ -273,60 +424,66 @@ export const StartGameModal = ({
           </View>
 
           <View className="mb-4 flex-row gap-12">
-            {/* Team A Column */}
+            {/* Team/Player A Column */}
             <View className="flex-1">
-              <TouchableOpacity
-                onPress={handleRandomizeTeamA}
-                className="ml-2"
-                accessibilityLabel="Randomize Team A"
-              >
-                <View className="flex-row items-center justify-center mb-2 gap-4">
-                  <Text className="text-lg font-bold text-app-primary text-center">
-                    Team A
-                  </Text>
-
+              <View className="flex-row items-center justify-center mb-2 gap-2">
+                <Text className="text-lg font-semibold text-app-text-primary text-center">
+                  {tab === "singles" ? "Player A" : "Team A"}
+                </Text>
+                <TouchableOpacity
+                  onPress={
+                    tab === "singles"
+                      ? handleRandomizeSinglesA
+                      : handleRandomizeTeamA
+                  }
+                  accessibilityLabel={
+                    tab === "singles"
+                      ? "Randomize Player A"
+                      : "Randomize Team A"
+                  }
+                >
                   <MaterialCommunityIcons
-                    name="dice-multiple"
+                    name={"dice-multiple"}
                     size={30}
                     color="#3B82F6"
                   />
-                </View>
-              </TouchableOpacity>
-              <ScrollView
-                style={{ maxHeight: 415 }}
-                keyboardShouldPersistTaps="handled"
-              >
+                </TouchableOpacity>
+              </View>
+              <ScrollView style={{ maxHeight: 415 }}>
                 {activePlayerIds.map((playerId) => {
                   const player = getPlayerById(playerId);
                   if (!player) return null;
-                  const selected = teamAPlayerIds.includes(playerId);
+                  const selected =
+                    tab === "singles"
+                      ? singlesPlayerA === playerId
+                      : teamAPlayerIds.includes(playerId);
                   const disabled =
-                    teamBPlayerIds.includes(playerId) ||
-                    (teamAPlayerIds.length >= selectionLimit && !selected);
+                    tab === "singles"
+                      ? singlesPlayerB === playerId
+                      : teamBPlayerIds.includes(playerId) ||
+                        (teamAPlayerIds.length >= selectionLimit && !selected);
                   return (
                     <TouchableOpacity
                       key={playerId}
-                      className={`flex-row justify-between items-center py-2 px-1 border-b border-app-modal-border
+                      className={`flex-row justify-between items-center py-3 px-1 border-b border-app-modal-border
               ${selected ? "bg-app-selected" : ""}`}
                       onPress={() => handleSelect(playerId, "A")}
                       disabled={disabled}
                     >
                       <Text
-                        className={`text-base font-medium ${disabled ? "text-app-text-disabled" : "text-app-text-primary"}`}
+                        className={`text-base font-medium ${
+                          disabled
+                            ? "text-app-text-disabled"
+                            : "text-app-text-primary"
+                        }`}
                       >
                         {player.name}
                       </Text>
-                      {!disabled && (
-                        <View
-                          className={`w-6 h-6 rounded-full border-2 items-center justify-center
-                  ${selected ? "bg-app-selected-border border-app-selected-border" : "border-app-text-muted"}
-                `}
-                        >
-                          {selected && (
-                            <Text className="text-app-white text-sm font-bold">
-                              ✓
-                            </Text>
-                          )}
+                      {!disabled && selected && (
+                        <View className="w-6 h-6 rounded-full border-2 items-center justify-center bg-app-selected-border border-app-selected-border">
+                          <Text className="text-app-white text-sm font-bold">
+                            ✓
+                          </Text>
                         </View>
                       )}
                     </TouchableOpacity>
@@ -334,64 +491,72 @@ export const StartGameModal = ({
                 })}
               </ScrollView>
               <Text className="text-center mt-4 text-sm text-app-text-muted">
-                Team A: {teamAPlayerIds.length}/2
+                {tab === "singles"
+                  ? `Player A: ${singlesPlayerA ? 1 : 0}/1`
+                  : `Team A: ${teamAPlayerIds.length}/2`}
               </Text>
             </View>
 
-            {/* Team B Column */}
+            {/* Team/Player B Column */}
             <View className="flex-1">
-              <TouchableOpacity
-                onPress={handleRandomizeTeamB}
-                className="ml-2"
-                accessibilityLabel="Randomize Team B"
-              >
-                <View className="flex-row items-center justify-center mb-2 gap-4">
-                  <Text className="text-lg font-bold text-app-primary text-center">
-                    Team B
-                  </Text>
-
+              <View className="flex-row items-center justify-center mb-2 gap-2">
+                <Text className="text-lg font-semibold text-app-text-primary text-center">
+                  {tab === "singles" ? "Player B" : "Team B"}
+                </Text>
+                <TouchableOpacity
+                  onPress={
+                    tab === "singles"
+                      ? handleRandomizeSinglesB
+                      : handleRandomizeTeamB
+                  }
+                  accessibilityLabel={
+                    tab === "singles"
+                      ? "Randomize Player B"
+                      : "Randomize Team B"
+                  }
+                >
                   <MaterialCommunityIcons
-                    name="dice-multiple"
+                    name={"dice-multiple"}
                     size={30}
                     color="#3B82F6"
                   />
-                </View>
-              </TouchableOpacity>
-              <ScrollView
-                style={{ maxHeight: 415 }}
-                keyboardShouldPersistTaps="handled"
-              >
+                </TouchableOpacity>
+              </View>
+              <ScrollView style={{ maxHeight: 415 }}>
                 {activePlayerIds.map((playerId) => {
                   const player = getPlayerById(playerId);
                   if (!player) return null;
-                  const selected = teamBPlayerIds.includes(playerId);
+                  const selected =
+                    tab === "singles"
+                      ? singlesPlayerB === playerId
+                      : teamBPlayerIds.includes(playerId);
                   const disabled =
-                    teamAPlayerIds.includes(playerId) ||
-                    (teamBPlayerIds.length >= selectionLimit && !selected);
+                    tab === "singles"
+                      ? singlesPlayerA === playerId
+                      : teamAPlayerIds.includes(playerId) ||
+                        (teamBPlayerIds.length >= selectionLimit && !selected);
                   return (
                     <TouchableOpacity
                       key={playerId}
-                      className={`flex-row justify-between items-center py-2 px-1 border-b border-app-modal-border
+                      className={`flex-row justify-between items-center py-3 px-1 border-b border-app-modal-border
               ${selected ? "bg-app-selected" : ""}`}
                       onPress={() => handleSelect(playerId, "B")}
                       disabled={disabled}
                     >
                       <Text
-                        className={`text-base font-medium ${disabled ? "text-app-text-disabled" : "text-app-text-primary"}`}
+                        className={`text-base font-medium ${
+                          disabled
+                            ? "text-app-text-disabled"
+                            : "text-app-text-primary"
+                        }`}
                       >
                         {player.name}
                       </Text>
-                      {!disabled && (
-                        <View
-                          className={`w-6 h-6 rounded-full border-2 items-center justify-center
-                  ${selected ? "bg-app-selected-border border-app-selected-border" : "border-app-text-muted"}
-                `}
-                        >
-                          {selected && (
-                            <Text className="text-app-white text-sm font-bold">
-                              ✓
-                            </Text>
-                          )}
+                      {!disabled && selected && (
+                        <View className="w-6 h-6 rounded-full border-2 items-center justify-center bg-app-selected-border border-app-selected-border">
+                          <Text className="text-app-white text-sm font-bold">
+                            ✓
+                          </Text>
                         </View>
                       )}
                     </TouchableOpacity>
@@ -399,7 +564,9 @@ export const StartGameModal = ({
                 })}
               </ScrollView>
               <Text className="text-center mt-4 text-sm text-app-text-muted">
-                Team B: {teamBPlayerIds.length}/2
+                {tab === "singles"
+                  ? `Player B: ${singlesPlayerB ? 1 : 0}/1`
+                  : `Team B: ${teamBPlayerIds.length}/2`}
               </Text>
             </View>
           </View>
@@ -416,21 +583,31 @@ export const StartGameModal = ({
 
             <TouchableOpacity
               className={`flex-1 py-4 rounded-xl items-center ${
-                teamAPlayerIds.length !== selectionLimit ||
-                teamBPlayerIds.length !== selectionLimit
+                (
+                  tab === "singles"
+                    ? !singlesPlayerA || !singlesPlayerB
+                    : teamAPlayerIds.length !== selectionLimit ||
+                      teamBPlayerIds.length !== selectionLimit
+                )
                   ? "bg-app-disabled"
                   : "bg-app-primary"
               }`}
               onPress={handleStartGame}
               disabled={
-                teamAPlayerIds.length !== selectionLimit ||
-                teamBPlayerIds.length !== selectionLimit
+                tab === "singles"
+                  ? !singlesPlayerA || !singlesPlayerB
+                  : teamAPlayerIds.length !== selectionLimit ||
+                    teamBPlayerIds.length !== selectionLimit
               }
             >
               <Text
                 className={`text-base font-semibold ${
-                  teamAPlayerIds.length !== selectionLimit ||
-                  teamBPlayerIds.length !== selectionLimit
+                  (
+                    tab === "singles"
+                      ? !singlesPlayerA || !singlesPlayerB
+                      : teamAPlayerIds.length !== selectionLimit ||
+                        teamBPlayerIds.length !== selectionLimit
+                  )
                     ? "text-app-text-disabled"
                     : "text-app-white"
                 }`}

@@ -123,6 +123,8 @@ export const StartSessionModal = ({
   const [duration, setDuration] = useState<number>(2);
   const [customDuration, setCustomDuration] = useState<string>("");
 
+  const selectionLimit = 2;
+
   const togglePlayer = (playerId: string) => {
     setSelectedPlayerIds((prev) => {
       const newSelected = prev.includes(playerId)
@@ -286,7 +288,8 @@ export const StartSessionModal = ({
           </View>
 
           <Text className="text-center mb-6 text-sm text-app-text-muted">
-            {selectedPlayerIds.length} players selected (minimum 4 required)
+            {selectedPlayerIds.length} players selected (minimum{" "}
+            {selectionLimit} required)
           </Text>
 
           <View className="mb-4">
@@ -341,16 +344,16 @@ export const StartSessionModal = ({
 
             <TouchableOpacity
               className={`flex-1 py-4 rounded-xl items-center ${
-                selectedPlayerIds.length < 4
+                selectedPlayerIds.length < selectionLimit
                   ? "bg-app-disabled"
                   : "bg-app-primary"
               }`}
               onPress={handleStartSession}
-              disabled={selectedPlayerIds.length < 4}
+              disabled={selectedPlayerIds.length < selectionLimit}
             >
               <Text
                 className={`text-base font-semibold ${
-                  selectedPlayerIds.length < 4
+                  selectedPlayerIds.length < selectionLimit
                     ? "text-app-text-disabled"
                     : "text-app-white"
                 }`}
