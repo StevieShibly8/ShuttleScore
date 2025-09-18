@@ -2,7 +2,7 @@ import { Game } from "./gameData";
 
 export interface Session {
   id: string;
-  players: Record<string, { isBenched: boolean }>;
+  players: Record<string, { isBenched: boolean; paid: boolean }>;
   duoIds: string[];
   date: string;
   pastGames: Game[];

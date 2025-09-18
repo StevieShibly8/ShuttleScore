@@ -47,22 +47,27 @@ export default function StatsScreen() {
         </View>
 
         <View className="space-y-3">
-          <Text className="text-white text-lg font-bold mb-4">
-            Player Performance
+          <Text className="text-white text-lg font-bold mb-1">Leaderboard</Text>
+          <Text className="text-sm text-app-text-muted mb-2">
+            Play a minimum of 30 games to be ranked.
           </Text>
           {[...players]
+            .filter((player) => {
+              const played = (player.wins ?? 0) + (player.losses ?? 0);
+              return played >= 30;
+            })
             .sort((a, b) => {
               const aWins = a.wins ?? 0;
               const aLosses = a.losses ?? 0;
               const aPlayed = aWins + aLosses;
-              const aWinRate = aPlayed > 0 ? aWins / aPlayed : 0;
+              const aWinRate = aWins / aPlayed;
 
               const bWins = b.wins ?? 0;
               const bLosses = b.losses ?? 0;
               const bPlayed = bWins + bLosses;
-              const bWinRate = bPlayed > 0 ? bWins / bPlayed : 0;
+              const bWinRate = bWins / bPlayed;
 
-              return bWinRate - aWinRate;
+              return bWinRate - aWinRate || bPlayed - aPlayed || b.rp - a.rp;
             })
             .map((player, index) => (
               <PlayerCard key={player.id} id={player.id} rank={index + 1} />

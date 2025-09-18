@@ -31,6 +31,11 @@ interface SessionStore {
     playerId: string,
     isBenched: boolean
   ) => void;
+  updatePlayerPaidStatus: (
+    sessionId: string,
+    playerId: string,
+    paid: boolean
+  ) => void;
   addPlayersToSession: (playerIds: string[], duoIds: string[]) => void;
   importSessions: (sessions: Session[]) => void;
 }
@@ -47,9 +52,9 @@ const sessionStoreCreator: StateCreator<SessionStore> = (set, get) => ({
     const gamesWonPerPlayer: Record<string, number> = {};
     const gamesWonPerDuo: Record<string, number> = {};
 
-    const players: Record<string, { isBenched: boolean }> = {};
+    const players: Record<string, { isBenched: boolean; paid: boolean }> = {};
     playerIds.forEach((pid) => {
-      players[pid] = { isBenched: false };
+      players[pid] = { isBenched: false, paid: false };
       gamesPlayedPerPlayer[pid] = 0;
       gamesWonPerPlayer[pid] = 0;
     });
@@ -176,6 +181,23 @@ const sessionStoreCreator: StateCreator<SessionStore> = (set, get) => ({
       get().updateSession(sessionId, { players: updatedPlayers });
     }
   },
+  updatePlayerPaidStatus: (
+    sessionId: string,
+    playerId: string,
+    paid: boolean
+  ) => {
+    const session = get().getSessionById(sessionId);
+    if (session && session.players[playerId]) {
+      const updatedPlayers = {
+        ...session.players,
+        [playerId]: {
+          ...session.players[playerId],
+          paid,
+        },
+      };
+      get().updateSession(sessionId, { players: updatedPlayers });
+    }
+  },
   addPlayersToSession: (playerIds: string[], duoIds: string[]) => {
     const session = get().getCurrentSession();
     if (!session) return;
@@ -183,7 +205,7 @@ const sessionStoreCreator: StateCreator<SessionStore> = (set, get) => ({
     const updatedPlayers = { ...session.players };
     playerIds.forEach((pid) => {
       if (!updatedPlayers[pid]) {
-        updatedPlayers[pid] = { isBenched: false };
+        updatedPlayers[pid] = { isBenched: false, paid: false };
       }
     });
 

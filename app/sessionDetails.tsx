@@ -18,13 +18,17 @@ export default function SessionDetailsScreen() {
     state.getSessionById(sessionId as string)
   );
   const getPlayerById = usePlayerStore((state) => state.getPlayerById);
+  const updatePlayerPaidStatus = useSessionStore(
+    (state) => state.updatePlayerPaidStatus
+  );
 
   const [showEditSessionModal, setShowEditSessionModal] = useState(false);
   const [selectedTab, setSelectedTab] = useState<TabType>("Players");
 
   const date = session?.date ?? "Unknown Date";
   const pastGames = session?.pastGames ?? [];
-  const playerIds = session?.players ? Object.keys(session.players) : [];
+  const players = session?.players ?? {};
+  const playerIds = players ? Object.keys(players) : [];
   const duoIds = session?.duoIds ?? [];
   const duration = session?.sessionDuration ?? 2;
 
@@ -183,31 +187,62 @@ export default function SessionDetailsScreen() {
           <Text className="text-xl text-white font-bold mb-3">
             Amounts Owed:
           </Text>
-          <View>
+          <View className="bg-app-modal-bg rounded-lg">
+            {/* Table Header */}
+            <View className="flex-row px-4 py-2 border-b border-app-modal-border">
+              <Text className="flex-1 text-white font-bold">Name</Text>
+              <Text className="w-24 text-white font-bold text-center">
+                Games
+              </Text>
+              <Text className="w-24 text-white font-bold text-center">
+                Owes
+              </Text>
+              <Text className="w-24 text-white font-bold text-center">
+                Paid
+              </Text>
+            </View>
+            {/* Table Rows */}
             {playerIds
-              .sort((a, b) => {
-                const gamesA = gamesPlayedPerPlayer[a] ?? 0;
-                const gamesB = gamesPlayedPerPlayer[b] ?? 0;
-                return gamesB - gamesA;
-              })
+              .sort(
+                (a, b) =>
+                  (gamesPlayedPerPlayer[b] ?? 0) -
+                  (gamesPlayedPerPlayer[a] ?? 0)
+              )
               .map((playerId) => {
                 const player = getPlayerById(playerId);
+                const paid = players[playerId]?.paid ?? false;
                 return (
                   <View
                     key={playerId}
-                    className="flex-row items-center bg-app-modal-bg rounded-lg px-4 py-3 mb-2"
+                    className="flex-row items-center px-4 py-2 border-b border-app-modal-border"
                   >
-                    <Text className="text-white text-base font-semibold flex-1 text-left">
-                      {player?.name}
+                    <Text className="flex-1 text-white">{player?.name}</Text>
+                    <Text className="w-24 text-white text-center">
+                      {gamesPlayedPerPlayer[playerId] ?? 0}
                     </Text>
-                    <View className="flex-1 items-center">
-                      <Text className="text-white text-base">
-                        Games: {gamesPlayedPerPlayer[playerId] ?? 0}
-                      </Text>
-                    </View>
-                    <Text className="text-white text-base flex-1 text-right">
-                      Owes: ${playerOwes[playerId].toFixed(2)}
+                    <Text className="w-24 text-white text-center">
+                      ${playerOwes[playerId].toFixed(2)}
                     </Text>
+                    <TouchableOpacity
+                      className="w-24 items-center"
+                      onPress={() =>
+                        updatePlayerPaidStatus(session.id, playerId, !paid)
+                      }
+                    >
+                      {paid ? (
+                        <Ionicons
+                          name="checkmark-circle"
+                          size={24}
+                          color="#6c935c"
+                        />
+                      ) : (
+                        <Ionicons
+                          name="ellipse-outline"
+                          size={24}
+                          color="#921721bc"
+                        />
+                      )}
+                    </TouchableOpacity>
                   </View>
                 );
               })}
