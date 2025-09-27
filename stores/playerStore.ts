@@ -20,7 +20,7 @@ const playerStoreCreator: StateCreator<PlayerStore> = (set, get) => ({
       name,
       wins: 0,
       losses: 0,
-      rp: 0,
+      rp: 10,
     };
     set((state: PlayerStore) => ({
       players: [...state.players, newPlayer].sort((a, b) =>

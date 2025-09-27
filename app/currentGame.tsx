@@ -248,19 +248,19 @@ export default function GameScreen() {
 
       updatePlayer(teamAPlayer1.id, {
         wins: (teamAPlayer1.wins ?? 0) + 1,
-        rp: Math.max(0, (teamAPlayer1.rp ?? 0) + rpChangeA),
+        rp: Math.max(0, Math.min(100, (teamAPlayer1.rp ?? 0) + rpChangeA)),
       });
       updatePlayer(teamAPlayer2.id, {
         wins: (teamAPlayer2.wins ?? 0) + 1,
-        rp: Math.max(0, (teamAPlayer2.rp ?? 0) + rpChangeA),
+        rp: Math.max(0, Math.min(100, (teamAPlayer2.rp ?? 0) + rpChangeA)),
       });
       updatePlayer(teamBPlayer1.id, {
         losses: (teamBPlayer1.losses ?? 0) + 1,
-        rp: Math.max(0, (teamBPlayer1.rp ?? 0) + rpChangeB),
+        rp: Math.max(0, Math.min(100, (teamBPlayer1.rp ?? 0) + rpChangeB)),
       });
       updatePlayer(teamBPlayer2.id, {
         losses: (teamBPlayer2.losses ?? 0) + 1,
-        rp: Math.max(0, (teamBPlayer2.rp ?? 0) + rpChangeB),
+        rp: Math.max(0, Math.min(100, (teamBPlayer2.rp ?? 0) + rpChangeB)),
       });
     } else if (scoreB > scoreA) {
       // Team B wins
@@ -269,19 +269,19 @@ export default function GameScreen() {
 
       updatePlayer(teamBPlayer1.id, {
         wins: (teamBPlayer1.wins ?? 0) + 1,
-        rp: Math.max(0, (teamBPlayer1.rp ?? 0) + rpChangeB),
+        rp: Math.max(0, Math.min(100, (teamBPlayer1.rp ?? 0) + rpChangeB)),
       });
       updatePlayer(teamBPlayer2.id, {
         wins: (teamBPlayer2.wins ?? 0) + 1,
-        rp: Math.max(0, (teamBPlayer2.rp ?? 0) + rpChangeB),
+        rp: Math.max(0, Math.min(100, (teamBPlayer2.rp ?? 0) + rpChangeB)),
       });
       updatePlayer(teamAPlayer1.id, {
         losses: (teamAPlayer1.losses ?? 0) + 1,
-        rp: Math.max(0, (teamAPlayer1.rp ?? 0) + rpChangeA),
+        rp: Math.max(0, Math.min(100, (teamAPlayer1.rp ?? 0) + rpChangeA)),
       });
       updatePlayer(teamAPlayer2.id, {
         losses: (teamAPlayer2.losses ?? 0) + 1,
-        rp: Math.max(0, (teamAPlayer2.rp ?? 0) + rpChangeA),
+        rp: Math.max(0, Math.min(100, (teamAPlayer2.rp ?? 0) + rpChangeA)),
       });
     }
   };

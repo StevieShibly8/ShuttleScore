@@ -2,7 +2,7 @@ import { usePlayerStore } from "@/stores/playerStore";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useEffect, useRef } from "react";
-import { Animated, Text, TouchableOpacity, View } from "react-native";
+import { Animated, Easing, Text, TouchableOpacity, View } from "react-native";
 
 interface PlayerCardProps {
   id: string;
@@ -32,8 +32,8 @@ export const PlayerCard = ({
   const p = w + l;
   const rate = p > 0 ? Math.round((w / p) * 100) : 0;
 
-  const cappedRp = Math.min(player?.rp ?? 0, 100);
-  const stars = Math.max(1, Math.floor(cappedRp / 20) + 1);
+  const rp = player?.rp ?? 0;
+  const stars = Math.max(1, Math.floor(rp / 20) + 1);
 
   // Benched state and animation
   const paddingAnim = useRef(new Animated.Value(2)).current;
@@ -48,6 +48,59 @@ export const PlayerCard = ({
 
   // Muted style for benched
   const mutedStyle = isBenched ? { opacity: 0.4 } : {};
+
+  // Animated star for RP 100
+  const spinAnim = useRef(new Animated.Value(0)).current;
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const spin = () => {
+      spinAnim.setValue(0);
+      Animated.timing(spinAnim, {
+        toValue: 1,
+        duration: 2000,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      }).start(() => {
+        if (isMounted) pulse();
+      });
+    };
+
+    const pulse = () => {
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 1.3,
+          duration: 400,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 400,
+          useNativeDriver: true,
+        }),
+        Animated.delay(400),
+      ]).start(() => {
+        if (isMounted) spin();
+      });
+    };
+
+    if (rp >= 100) {
+      spin();
+    }
+
+    return () => {
+      isMounted = false;
+      spinAnim.stopAnimation();
+      pulseAnim.stopAnimation();
+    };
+  }, [rp, spinAnim, pulseAnim]);
+
+  const spinInterpolate = spinAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ["0deg", "360deg"],
+  });
 
   // If bench button is shown, use row layout with button at end
   if (showBenchButton) {
@@ -136,17 +189,37 @@ export const PlayerCard = ({
               }}
             >
               <Text className="text-app-primary text-sm font-semibold">
-                RP: {player?.rp}
+                RP: {rp}
               </Text>
               <View style={{ flexDirection: "row", marginTop: 4 }}>
-                {[...Array(stars)].map((_, i) => (
-                  <Text
-                    key={i}
-                    className="text-yellow-400 text-lg text-app-warning"
-                  >
-                    ★
-                  </Text>
-                ))}
+                {rp >= 100
+                  ? [...Array(5)].map((_, i) => (
+                      <Animated.View
+                        key={i}
+                        style={{
+                          transform: [
+                            { rotate: spinInterpolate },
+                            { scale: pulseAnim },
+                          ],
+                          shadowColor: "#ffd900ff",
+                          shadowOffset: { width: 0, height: 0 },
+                          shadowOpacity: 0.8,
+                          shadowRadius: pulseAnim.interpolate({
+                            inputRange: [1, 1.3],
+                            outputRange: [6, 16],
+                          }),
+                          elevation: 8,
+                          marginHorizontal: 1,
+                        }}
+                      >
+                        <Ionicons name="star" size={13} color="#ffd900ff" />
+                      </Animated.View>
+                    ))
+                  : [...Array(stars)].map((_, i) => (
+                      <Text key={i} className="text-lg text-app-warning">
+                        ★
+                      </Text>
+                    ))}
               </View>
             </View>
           </View>
@@ -252,17 +325,37 @@ export const PlayerCard = ({
           }}
         >
           <Text className="text-app-primary text-sm font-semibold">
-            RP: {player?.rp}
+            RP: {rp}
           </Text>
           <View style={{ flexDirection: "row", marginTop: 4 }}>
-            {[...Array(stars)].map((_, i) => (
-              <Text
-                key={i}
-                className="text-yellow-400 text-lg text-app-warning"
-              >
-                ★
-              </Text>
-            ))}
+            {rp >= 100
+              ? [...Array(5)].map((_, i) => (
+                  <Animated.View
+                    key={i}
+                    style={{
+                      transform: [
+                        { rotate: spinInterpolate },
+                        { scale: pulseAnim },
+                      ],
+                      shadowColor: "#ffd900ff",
+                      shadowOffset: { width: 0, height: 0 },
+                      shadowOpacity: 0.8,
+                      shadowRadius: pulseAnim.interpolate({
+                        inputRange: [1, 1.3],
+                        outputRange: [6, 16],
+                      }),
+                      elevation: 8,
+                      marginHorizontal: 1,
+                    }}
+                  >
+                    <Ionicons name="star" size={13} color="#ffd900ff" />
+                  </Animated.View>
+                ))
+              : [...Array(stars)].map((_, i) => (
+                  <Text key={i} className="text-lg text-app-warning">
+                    ★
+                  </Text>
+                ))}
           </View>
         </View>
       </View>
