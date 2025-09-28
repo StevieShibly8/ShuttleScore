@@ -247,7 +247,7 @@ export default function SessionDetailsScreen() {
                         <Ionicons
                           name="ellipse-outline"
                           size={24}
-                          color="#921721bc"
+                          color="#F59E0B"
                         />
                       )}
                     </TouchableOpacity>

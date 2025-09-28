@@ -177,7 +177,7 @@ export default function PlayersScreen() {
                 {editingId === player.id ? (
                   <>
                     <TextInput
-                      className="border border-app-primary rounded-lg px-2 py-1 text-base text-app-text-primary bg-app-modal-bg"
+                      className="border border-app-primary rounded-lg px-3 py-2 text-base text-app-text-primary bg-app-modal-bg"
                       value={editingName}
                       onChangeText={setEditingName}
                       autoFocus
@@ -198,9 +198,6 @@ export default function PlayersScreen() {
                     <View style={{ flex: 1 }}>
                       <Text className="text-white font-semibold text-lg">
                         {player.name}
-                      </Text>
-                      <Text className="text-app-text-muted text-sm">
-                        RP: {player.rp}
                       </Text>
                     </View>
                     <TouchableOpacity
