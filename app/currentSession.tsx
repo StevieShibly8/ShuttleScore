@@ -36,6 +36,14 @@ export default function CurrentSessionScreen() {
   const [showAddPlayerModal, setShowAddPlayerModal] = useState(false);
 
   const date = session?.date ?? "Unknown Date";
+  const dateStr = new Date(date).toLocaleDateString(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  });
   const pastGames = session?.pastGames ?? [];
   const playerIds = session?.players ? Object.keys(session.players) : [];
   const duoIds = session?.duoIds ?? [];
@@ -145,7 +153,7 @@ export default function CurrentSessionScreen() {
                 Date
               </Text>
               <Text className="text-white text-base flex-1 text-right">
-                {date}
+                {dateStr}
               </Text>
             </View>
             <View className="flex-row items-center bg-app-modal-bg rounded-lg px-4 py-3 mb-2">

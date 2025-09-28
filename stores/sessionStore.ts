@@ -68,7 +68,7 @@ const sessionStoreCreator: StateCreator<SessionStore> = (set, get) => ({
       id: uuid.v4() as string,
       players,
       duoIds,
-      date: new Date().toLocaleString(),
+      date: new Date().toISOString(),
       pastGames: [],
       currentGame: null,
       gamesPlayedPerPlayer,

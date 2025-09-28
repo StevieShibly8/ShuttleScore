@@ -26,6 +26,14 @@ export default function SessionDetailsScreen() {
   const [selectedTab, setSelectedTab] = useState<TabType>("Players");
 
   const date = session?.date ?? "Unknown Date";
+  const dateStr = new Date(date).toLocaleDateString(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  });
   const pastGames = session?.pastGames ?? [];
   const players = session?.players ?? {};
   const playerIds = players ? Object.keys(players) : [];
@@ -106,7 +114,7 @@ export default function SessionDetailsScreen() {
                 Date
               </Text>
               <Text className="text-white text-base flex-1 text-right">
-                {date}
+                {dateStr}
               </Text>
             </View>
             <View className="flex-row items-center bg-app-modal-bg rounded-lg px-4 py-3 mb-2">

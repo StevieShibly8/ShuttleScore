@@ -7,7 +7,7 @@ export default function SessionsScreen() {
   const getCurrentSession = useSessionStore((state) => state.getCurrentSession);
   const currentSession = getCurrentSession();
   const pastSessions = sessions.filter((s) => s.id !== currentSession?.id);
-  const pastSessionsSorted = pastSessions.sort(
+  const pastSessionsSorted = [...pastSessions].sort(
     (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
   );
 
@@ -52,7 +52,11 @@ export default function SessionsScreen() {
             </View>
           ) : (
             pastSessionsSorted.map((session) => (
-              <SessionCard key={session.id} sessionId={session.id} />
+              <SessionCard
+                key={session.id}
+                sessionId={session.id}
+                showPaidProgressBar
+              />
             ))
           )}
         </View>

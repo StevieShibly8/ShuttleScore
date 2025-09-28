@@ -13,7 +13,7 @@ export default function StatsScreen() {
     0
   );
   const averageGamesPerSession =
-    totalSessions > 0 ? (totalGames / totalSessions).toFixed(2) : "0.00";
+    totalSessions > 0 ? Math.round(totalGames / totalSessions) : "0";
 
   return (
     <ScrollView className="flex-1 bg-app-background">

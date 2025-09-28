@@ -13,15 +13,33 @@ interface SessionCardProps {
   sessionId: string;
   variant?: "default" | "primary";
   active?: boolean;
+  showPaidProgressBar?: boolean;
 }
 
 export const SessionCard = ({
   sessionId,
   variant = "default",
   active = false,
+  showPaidProgressBar = false,
 }: SessionCardProps) => {
   const router = useRouter();
   const session = useSessionStore((state) => state.getSessionById(sessionId));
+  const pastGames = session?.pastGames ?? [];
+  const pastGamesCount = pastGames.length;
+  const date = session?.date ?? "Unknown Date";
+  const dateStr = new Date(date).toLocaleDateString(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  });
+  const players = session?.players ?? {};
+  const playerIds = Object.keys(players);
+  const playerCount = playerIds.length;
+  const paidCount = playerIds.filter((pid) => players[pid]?.paid).length;
+  const totalCount = playerIds.length;
 
   return (
     <TouchableOpacity
@@ -42,22 +60,54 @@ export const SessionCard = ({
               : "text-white font-semibold text-lg"
           }
         >
-          {active ? "Live Session" : session?.date}
+          {active ? "Live Session" : dateStr}
         </CardTitle>
         <CardHeader>
-          <Text className="text-app-text-secondary text-sm mb-2">
+          <Text className="text-app-text-secondary text-sm">
             {active
-              ? session?.date
-              : `${session?.pastGames.length} ${session?.pastGames.length === 1 ? "game" : "games"} completed`}
+              ? dateStr
+              : `${pastGamesCount} ${pastGamesCount === 1 ? "game" : "games"} | ${playerCount} players`}
           </Text>
         </CardHeader>
-        {active && (
+        {active ? (
           <CardContent>
             <Text className="text-app-text-secondary text-sm">
-              {session?.pastGames.length}
-              {session?.pastGames.length === 1 ? " game" : " games"} played
+              {pastGamesCount}
+              {pastGamesCount === 1 ? " game" : " games"} played
             </Text>
           </CardContent>
+        ) : (
+          showPaidProgressBar && (
+            <View>
+              <View
+                style={{
+                  height: 3,
+                  backgroundColor: "#333a44",
+                  overflow: "hidden",
+                }}
+              >
+                <View
+                  style={{
+                    width: `${(paidCount / totalCount) * 100}%`,
+                    height: "100%",
+                    backgroundColor:
+                      paidCount === totalCount ? "#6C935C" : "#F59E0B",
+                    borderRadius: 4,
+                  }}
+                />
+              </View>
+              <Text
+                style={{
+                  color: paidCount === totalCount ? "#6C935C" : "#F59E0B",
+                  fontWeight: "bold",
+                  fontSize: 12,
+                  textAlign: "right",
+                }}
+              >
+                {paidCount}/{totalCount} paid
+              </Text>
+            </View>
+          )
         )}
         <CardFooter>
           {active && (

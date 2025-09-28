@@ -9,13 +9,13 @@ module.exports = {
         app: {
           black: "#000000",
           white: "#FFFFFF",
-          primary: "#6c935c",
+          primary: "#6C935C",
           secondary: "#6366F1",
           success: "#22C55E",
           info: "#3B82F6",
           warning: "#F59E0B",
-          danger: "#921721bc",
-          background: "#1b2129ff",
+          danger: "#921721BC",
+          background: "#1B2129FF",
 
           // Card styles
           card: "rgba(255, 255, 255, 0.05)",
