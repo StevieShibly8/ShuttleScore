@@ -321,7 +321,6 @@ export const BadmintonCourt = ({
 
   const handleSwapSingles = () => {
     if (!currentGame) return;
-    console.log("Swapping singles");
     animateDiagonalSwap(
       teamAPlayer1TranslateX,
       teamAPlayer1TranslateY,
