@@ -1,3 +1,4 @@
+import { Duo } from "@/data/duoData";
 import { Player } from "@/data/playerData";
 import { useDuoStore } from "@/stores/duoStore";
 import { usePlayerStore } from "@/stores/playerStore";
@@ -23,22 +24,40 @@ export default function GameDetailsScreen() {
     );
   }
 
-  const teamAScore = game.teamA.score ?? 0;
-  const teamBScore = game.teamB.score ?? 0;
-  const winner =
-    teamAScore > teamBScore ? "A" : teamBScore > teamAScore ? "B" : null;
+  const gameType = game?.gameType ?? "doubles";
 
-  const duoA = getDuoById(game.teamA.duoId);
-  const duoB = getDuoById(game.teamB.duoId);
+  const teamA = game?.teamA;
+  const teamB = game?.teamB;
 
-  const teamAPlayer1 = duoA ? getPlayerById(duoA.playerIds[0]) : undefined;
-  const teamAPlayer2 = duoA ? getPlayerById(duoA.playerIds[1]) : undefined;
-  const teamBPlayer1 = duoB ? getPlayerById(duoB.playerIds[0]) : undefined;
-  const teamBPlayer2 = duoB ? getPlayerById(duoB.playerIds[1]) : undefined;
+  const scoreA = teamA?.score ?? 0;
+  const scoreB = teamB?.score ?? 0;
+  const winner = scoreA > scoreB ? "A" : scoreB > scoreA ? "B" : null;
+
+  let duoA: Duo | undefined;
+  let duoB: Duo | undefined;
+  let teamAPlayer1: Player | undefined;
+  let teamAPlayer2: Player | undefined;
+  let teamBPlayer1: Player | undefined;
+  let teamBPlayer2: Player | undefined;
+
+  let playerA: Player | undefined;
+  let playerB: Player | undefined;
+
+  if (gameType === "doubles") {
+    duoA = teamA ? getDuoById(teamA.id) : undefined;
+    duoB = teamB ? getDuoById(teamB.id) : undefined;
+    teamAPlayer1 = duoA ? getPlayerById(duoA.playerIds[0]) : undefined;
+    teamAPlayer2 = duoA ? getPlayerById(duoA.playerIds[1]) : undefined;
+    teamBPlayer1 = duoB ? getPlayerById(duoB.playerIds[0]) : undefined;
+    teamBPlayer2 = duoB ? getPlayerById(duoB.playerIds[1]) : undefined;
+  } else {
+    playerA = teamA ? getPlayerById(teamA.id) : undefined;
+    playerB = teamB ? getPlayerById(teamB.id) : undefined;
+  }
 
   // --- RP Calculation Logic ---
-  const getStarCount = (rp1: number, rp2: number) => {
-    const avgRp = Math.min(((rp1 ?? 0) + (rp2 ?? 0)) / 2, 100);
+  const getStarCount = (rp1: number, rp2?: number) => {
+    const avgRp = rp2 ? Math.min(((rp1 ?? 0) + (rp2 ?? 0)) / 2, 100) : rp1;
     return Math.max(1, Math.floor(avgRp / 20) + 1);
   };
 
@@ -56,11 +75,20 @@ export default function GameDetailsScreen() {
   };
 
   // Get current RPs
-  const rpA1 = teamAPlayer1?.rp ?? 0;
-  const rpA2 = teamAPlayer2?.rp ?? 0;
-  const rpB1 = teamBPlayer1?.rp ?? 0;
-  const rpB2 = teamBPlayer2?.rp ?? 0;
+  let rpA1;
+  let rpA2;
+  let rpB1;
+  let rpB2;
 
+  if (gameType === "doubles") {
+    rpA1 = teamAPlayer1?.rp ?? 0;
+    rpA2 = teamAPlayer2?.rp ?? 0;
+    rpB1 = teamBPlayer1?.rp ?? 0;
+    rpB2 = teamBPlayer2?.rp ?? 0;
+  } else {
+    rpA1 = playerA?.rp ?? 0;
+    rpB1 = playerB?.rp ?? 0;
+  }
   // Calculate star counts
   const teamAStars = getStarCount(rpA1, rpA2);
   const teamBStars = getStarCount(rpB1, rpB2);
@@ -69,8 +97,9 @@ export default function GameDetailsScreen() {
   const starDiffA = teamBStars - teamAStars;
   const starDiffB = teamAStars - teamBStars;
 
-  let rpChangeA = 0,
-    rpChangeB = 0;
+  let rpChangeA = 0;
+  let rpChangeB = 0;
+
   if (winner === "A") {
     rpChangeA = getRpChange(starDiffA, true);
     rpChangeB = getRpChange(starDiffB, false);
@@ -121,32 +150,42 @@ export default function GameDetailsScreen() {
         <View className="w-full max-w-xl bg-app-card border border-app-card-border rounded-xl-plus p-6 items-center mb-8">
           <View className="flex-row items-center mb-2">
             <Text className="text-white text-lg font-semibold mr-2">
-              Team A
+              {gameType === "doubles"
+                ? `${teamAPlayer1?.name} & ${teamAPlayer2?.name}`
+                : playerA?.name}
             </Text>
             {winner === "A" && (
               <Ionicons name="trophy" size={22} color="#F59E0B" />
             )}
           </View>
-          <Text className="text-white text-base mb-1">
-            {teamAPlayer1?.name} & {teamAPlayer2?.name}
-          </Text>
           <Text className="text-white text-xl font-bold mb-2">
-            Score: {teamAScore}
+            Score: {scoreA}
           </Text>
           {/* RP Stats */}
           <View className="w-full flex-row justify-between mt-2">
-            <View className="flex-1">
-              <Text className="text-app-text-muted text-xs mb-1">
-                {teamAPlayer1?.name}
-              </Text>
-              {renderRpStat(teamAPlayer1, rpChangeA)}
-            </View>
-            <View className="flex-1">
-              <Text className="text-app-text-muted text-xs mb-1">
-                {teamAPlayer2?.name}
-              </Text>
-              {renderRpStat(teamAPlayer2, rpChangeA)}
-            </View>
+            {gameType === "doubles" ? (
+              <>
+                <View className="flex-1 items-center">
+                  <Text className="text-app-text-muted text-lg mb-1">
+                    {teamAPlayer1?.name}
+                  </Text>
+                  {renderRpStat(teamAPlayer1, rpChangeA)}
+                </View>
+                <View className="flex-1 items-center">
+                  <Text className="text-app-text-muted text-lg mb-1">
+                    {teamAPlayer2?.name}
+                  </Text>
+                  {renderRpStat(teamAPlayer2, rpChangeA)}
+                </View>
+              </>
+            ) : (
+              <View className="flex-1 items-center">
+                <Text className="text-app-text-muted text-lg mb-1">
+                  {playerA?.name}
+                </Text>
+                {renderRpStat(playerA, rpChangeA)}
+              </View>
+            )}
           </View>
         </View>
 
@@ -154,32 +193,42 @@ export default function GameDetailsScreen() {
         <View className="w-full max-w-xl bg-app-card border border-app-card-border rounded-xl-plus p-6 items-center">
           <View className="flex-row items-center mb-2">
             <Text className="text-white text-lg font-semibold mr-2">
-              Team B
+              {gameType === "doubles"
+                ? `${teamBPlayer1?.name} & ${teamBPlayer2?.name}`
+                : playerB?.name}
             </Text>
             {winner === "B" && (
               <Ionicons name="trophy" size={22} color="#F59E0B" />
             )}
           </View>
-          <Text className="text-white text-base mb-1">
-            {teamBPlayer1?.name} & {teamBPlayer2?.name}
-          </Text>
           <Text className="text-white text-xl font-bold mb-2">
-            Score: {teamBScore}
+            Score: {scoreB}
           </Text>
           {/* RP Stats */}
           <View className="w-full flex-row justify-between mt-2">
-            <View className="flex-1">
-              <Text className="text-app-text-muted text-xs mb-1">
-                {teamBPlayer1?.name}
-              </Text>
-              {renderRpStat(teamBPlayer1, rpChangeB)}
-            </View>
-            <View className="flex-1">
-              <Text className="text-app-text-muted text-xs mb-1">
-                {teamBPlayer2?.name}
-              </Text>
-              {renderRpStat(teamBPlayer2, rpChangeB)}
-            </View>
+            {gameType === "doubles" ? (
+              <>
+                <View className="flex-1 items-center">
+                  <Text className="text-app-text-muted text-lg mb-1">
+                    {teamBPlayer1?.name}
+                  </Text>
+                  {renderRpStat(teamBPlayer1, rpChangeB)}
+                </View>
+                <View className="flex-1 items-center">
+                  <Text className="text-app-text-muted text-lg mb-1">
+                    {teamBPlayer2?.name}
+                  </Text>
+                  {renderRpStat(teamBPlayer2, rpChangeB)}
+                </View>
+              </>
+            ) : (
+              <View className="flex-1 items-center">
+                <Text className="text-app-text-muted text-lg mb-1">
+                  {playerB?.name}
+                </Text>
+                {renderRpStat(playerB, rpChangeB)}
+              </View>
+            )}
           </View>
         </View>
       </View>

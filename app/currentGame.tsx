@@ -1,6 +1,8 @@
 import { BadmintonCourt } from "@/components/BadmintonCourt";
 import { ModalPopup } from "@/components/ModalPopup";
 import { Scoreboard } from "@/components/Scoreboard";
+import { Duo } from "@/data/duoData";
+import { Player } from "@/data/playerData";
 import { useDuoStore } from "@/stores/duoStore";
 import { usePlayerStore } from "@/stores/playerStore";
 import { useSessionStore } from "@/stores/sessionStore";
@@ -38,27 +40,35 @@ export default function GameScreen() {
     state.getCurrentGame(sessionId as string)
   );
 
+  const gameType = game?.gameType ?? "doubles";
+
   const teamA = game?.teamA;
   const teamB = game?.teamB;
 
-  const duoA = teamA ? getDuoById(teamA.duoId) : undefined;
-  const duoB = teamB ? getDuoById(teamB.duoId) : undefined;
+  let duoA: Duo | undefined;
+  let duoB: Duo | undefined;
+  let teamAPlayer1: Player | undefined;
+  let teamAPlayer2: Player | undefined;
+  let teamBPlayer1: Player | undefined;
+  let teamBPlayer2: Player | undefined;
+
+  let playerA: Player | undefined;
+  let playerB: Player | undefined;
+
+  if (gameType === "doubles") {
+    duoA = teamA ? getDuoById(teamA.id) : undefined;
+    duoB = teamB ? getDuoById(teamB.id) : undefined;
+    teamAPlayer1 = duoA ? getPlayerById(duoA.playerIds[0]) : undefined;
+    teamAPlayer2 = duoA ? getPlayerById(duoA.playerIds[1]) : undefined;
+    teamBPlayer1 = duoB ? getPlayerById(duoB.playerIds[0]) : undefined;
+    teamBPlayer2 = duoB ? getPlayerById(duoB.playerIds[1]) : undefined;
+  } else {
+    playerA = teamA ? getPlayerById(teamA.id) : undefined;
+    playerB = teamB ? getPlayerById(teamB.id) : undefined;
+  }
 
   const scoreA = teamA?.score ?? 0;
   const scoreB = teamB?.score ?? 0;
-
-  const teamAPlayer1 = duoA?.playerIds?.[0]
-    ? getPlayerById(duoA.playerIds[0])
-    : undefined;
-  const teamAPlayer2 = duoA?.playerIds?.[1]
-    ? getPlayerById(duoA.playerIds[1])
-    : undefined;
-  const teamBPlayer1 = duoB?.playerIds?.[0]
-    ? getPlayerById(duoB.playerIds[0])
-    : undefined;
-  const teamBPlayer2 = duoB?.playerIds?.[1]
-    ? getPlayerById(duoB.playerIds[1])
-    : undefined;
 
   const gamePoint = game?.gamePoint ?? 21;
   const pointCap = game?.pointCap ?? 30;
@@ -89,6 +99,10 @@ export default function GameScreen() {
       currentGame: {
         ...game,
         isTeamSwapped: !isTeamSwapped,
+        isTeamASwapped:
+          gameType === "doubles" ? isTeamASwapped : !isTeamASwapped,
+        isTeamBSwapped:
+          gameType === "doubles" ? isTeamBSwapped : !isTeamBSwapped,
         server: game.server === "A" ? "B" : "A", // keep this to keep shuttlecock on same team
       },
     });
@@ -109,6 +123,8 @@ export default function GameScreen() {
   // Server index: even points = right court (0), odd = left court (1)
   const servingScore = server === "A" ? scoreA : scoreB;
   const serverIndex = servingScore % 2 === 0 ? 0 : 1;
+  const notServingScore = server === "A" ? scoreB : scoreA;
+  const notServerIndex = notServingScore % 2 === 0 ? 0 : 1;
 
   // Game completion logic
   const reachedMaxScore = scoreA >= pointCap || scoreB >= pointCap;
@@ -137,6 +153,18 @@ export default function GameScreen() {
             ...game.teamA,
             score: scoreA + 1,
           },
+          isTeamASwapped:
+            gameType === "doubles"
+              ? game.isTeamASwapped
+              : serverIndex === notServerIndex
+                ? !game.isTeamASwapped
+                : game.isTeamASwapped,
+          isTeamBSwapped:
+            gameType === "doubles"
+              ? game.isTeamBSwapped
+              : serverIndex === notServerIndex
+                ? !game.isTeamBSwapped
+                : game.isTeamBSwapped,
           undoqueue: newUndo,
           redoqueue: [],
           initialServer,
@@ -151,6 +179,8 @@ export default function GameScreen() {
             score: scoreA + 1,
           },
           isTeamASwapped: !game.isTeamASwapped,
+          isTeamBSwapped:
+            gameType === "doubles" ? game.isTeamBSwapped : !game.isTeamBSwapped,
           undoqueue: newUndo,
           redoqueue: [],
           initialServer,
@@ -176,6 +206,18 @@ export default function GameScreen() {
             ...game.teamB,
             score: scoreB + 1,
           },
+          isTeamASwapped:
+            gameType === "doubles"
+              ? game.isTeamASwapped
+              : serverIndex === notServerIndex
+                ? !game.isTeamASwapped
+                : game.isTeamASwapped,
+          isTeamBSwapped:
+            gameType === "doubles"
+              ? game.isTeamBSwapped
+              : serverIndex === notServerIndex
+                ? !game.isTeamBSwapped
+                : game.isTeamBSwapped,
           undoqueue: newUndo,
           redoqueue: [],
           initialServer,
@@ -190,6 +232,8 @@ export default function GameScreen() {
             score: scoreB + 1,
           },
           isTeamBSwapped: !game.isTeamBSwapped,
+          isTeamASwapped:
+            gameType === "doubles" ? game.isTeamASwapped : !game.isTeamASwapped,
           undoqueue: newUndo,
           redoqueue: [],
           initialServer,
@@ -199,6 +243,7 @@ export default function GameScreen() {
   };
 
   const updateDuoStats = () => {
+    if (gameType !== "doubles") return;
     if (!duoA || !duoB) return;
     if (!isGameComplete) return;
 
@@ -212,8 +257,8 @@ export default function GameScreen() {
   };
 
   const updatePlayerStats = () => {
-    const getStarCount = (rp1: number, rp2: number) => {
-      const avgRp = Math.min(((rp1 ?? 0) + (rp2 ?? 0)) / 2, 100);
+    const getStarCount = (rp1: number, rp2?: number) => {
+      const avgRp = rp2 ? Math.min(((rp1 ?? 0) + (rp2 ?? 0)) / 2, 100) : rp1;
       return Math.max(1, Math.floor(avgRp / 20) + 1);
     };
 
@@ -231,135 +276,197 @@ export default function GameScreen() {
       return 0;
     };
 
-    if (!teamAPlayer1 || !teamAPlayer2 || !teamBPlayer1 || !teamBPlayer2)
-      return;
-    if (!isGameComplete) return;
+    if (gameType === "doubles") {
+      if (!teamAPlayer1 || !teamAPlayer2 || !teamBPlayer1 || !teamBPlayer2)
+        return;
+      if (!isGameComplete) return;
 
-    // Calculate average RP and stars for both teams
-    const teamAStars = getStarCount(teamAPlayer1.rp ?? 0, teamAPlayer2.rp ?? 0);
-    const teamBStars = getStarCount(teamBPlayer1.rp ?? 0, teamBPlayer2.rp ?? 0);
+      // Calculate average RP and stars for both teams
+      const teamAStars = getStarCount(
+        teamAPlayer1.rp ?? 0,
+        teamAPlayer2.rp ?? 0
+      );
+      const teamBStars = getStarCount(
+        teamBPlayer1.rp ?? 0,
+        teamBPlayer2.rp ?? 0
+      );
 
-    const starDiffA = teamBStars - teamAStars;
-    const starDiffB = teamAStars - teamBStars;
-    if (scoreA > scoreB) {
-      // Team A wins
-      const rpChangeA = getRpChange(starDiffA, true);
-      const rpChangeB = getRpChange(starDiffB, false);
+      const starDiffA = teamBStars - teamAStars;
+      const starDiffB = teamAStars - teamBStars;
+      if (scoreA > scoreB) {
+        // Team A wins
+        const rpChangeA = getRpChange(starDiffA, true);
+        const rpChangeB = getRpChange(starDiffB, false);
 
-      updatePlayer(teamAPlayer1.id, {
-        wins: (teamAPlayer1.wins ?? 0) + 1,
-        rp: Math.max(0, Math.min(100, (teamAPlayer1.rp ?? 0) + rpChangeA)),
-      });
-      updatePlayer(teamAPlayer2.id, {
-        wins: (teamAPlayer2.wins ?? 0) + 1,
-        rp: Math.max(0, Math.min(100, (teamAPlayer2.rp ?? 0) + rpChangeA)),
-      });
-      updatePlayer(teamBPlayer1.id, {
-        losses: (teamBPlayer1.losses ?? 0) + 1,
-        rp: Math.max(0, Math.min(100, (teamBPlayer1.rp ?? 0) + rpChangeB)),
-      });
-      updatePlayer(teamBPlayer2.id, {
-        losses: (teamBPlayer2.losses ?? 0) + 1,
-        rp: Math.max(0, Math.min(100, (teamBPlayer2.rp ?? 0) + rpChangeB)),
-      });
-    } else if (scoreB > scoreA) {
-      // Team B wins
-      const rpChangeA = getRpChange(starDiffA, false);
-      const rpChangeB = getRpChange(starDiffB, true);
+        updatePlayer(teamAPlayer1.id, {
+          wins: (teamAPlayer1.wins ?? 0) + 1,
+          rp: Math.max(0, Math.min(100, (teamAPlayer1.rp ?? 0) + rpChangeA)),
+        });
+        updatePlayer(teamAPlayer2.id, {
+          wins: (teamAPlayer2.wins ?? 0) + 1,
+          rp: Math.max(0, Math.min(100, (teamAPlayer2.rp ?? 0) + rpChangeA)),
+        });
+        updatePlayer(teamBPlayer1.id, {
+          losses: (teamBPlayer1.losses ?? 0) + 1,
+          rp: Math.max(0, Math.min(100, (teamBPlayer1.rp ?? 0) + rpChangeB)),
+        });
+        updatePlayer(teamBPlayer2.id, {
+          losses: (teamBPlayer2.losses ?? 0) + 1,
+          rp: Math.max(0, Math.min(100, (teamBPlayer2.rp ?? 0) + rpChangeB)),
+        });
+      } else if (scoreB > scoreA) {
+        // Team B wins
+        const rpChangeA = getRpChange(starDiffA, false);
+        const rpChangeB = getRpChange(starDiffB, true);
 
-      updatePlayer(teamBPlayer1.id, {
-        wins: (teamBPlayer1.wins ?? 0) + 1,
-        rp: Math.max(0, Math.min(100, (teamBPlayer1.rp ?? 0) + rpChangeB)),
-      });
-      updatePlayer(teamBPlayer2.id, {
-        wins: (teamBPlayer2.wins ?? 0) + 1,
-        rp: Math.max(0, Math.min(100, (teamBPlayer2.rp ?? 0) + rpChangeB)),
-      });
-      updatePlayer(teamAPlayer1.id, {
-        losses: (teamAPlayer1.losses ?? 0) + 1,
-        rp: Math.max(0, Math.min(100, (teamAPlayer1.rp ?? 0) + rpChangeA)),
-      });
-      updatePlayer(teamAPlayer2.id, {
-        losses: (teamAPlayer2.losses ?? 0) + 1,
-        rp: Math.max(0, Math.min(100, (teamAPlayer2.rp ?? 0) + rpChangeA)),
-      });
+        updatePlayer(teamBPlayer1.id, {
+          wins: (teamBPlayer1.wins ?? 0) + 1,
+          rp: Math.max(0, Math.min(100, (teamBPlayer1.rp ?? 0) + rpChangeB)),
+        });
+        updatePlayer(teamBPlayer2.id, {
+          wins: (teamBPlayer2.wins ?? 0) + 1,
+          rp: Math.max(0, Math.min(100, (teamBPlayer2.rp ?? 0) + rpChangeB)),
+        });
+        updatePlayer(teamAPlayer1.id, {
+          losses: (teamAPlayer1.losses ?? 0) + 1,
+          rp: Math.max(0, Math.min(100, (teamAPlayer1.rp ?? 0) + rpChangeA)),
+        });
+        updatePlayer(teamAPlayer2.id, {
+          losses: (teamAPlayer2.losses ?? 0) + 1,
+          rp: Math.max(0, Math.min(100, (teamAPlayer2.rp ?? 0) + rpChangeA)),
+        });
+      }
+    } else if (gameType === "singles") {
+      if (!playerA || !playerB) return;
+      if (!isGameComplete) return;
+
+      const playerAStars = getStarCount(playerA.rp ?? 0);
+      const playerBStars = getStarCount(playerB.rp ?? 0);
+
+      const starDiffA = playerBStars - playerAStars;
+      const starDiffB = playerAStars - playerBStars;
+
+      if (scoreA > scoreB) {
+        // Player A wins
+        const rpChangeA = getRpChange(starDiffA, true);
+        const rpChangeB = getRpChange(starDiffB, false);
+
+        updatePlayer(playerA.id, {
+          wins: (playerA.wins ?? 0) + 1,
+          rp: Math.max(0, Math.min(100, (playerA.rp ?? 0) + rpChangeA)),
+        });
+        updatePlayer(playerB.id, {
+          losses: (playerB.losses ?? 0) + 1,
+          rp: Math.max(0, Math.min(100, (playerB.rp ?? 0) + rpChangeB)),
+        });
+      } else if (scoreB > scoreA) {
+        // Player B wins
+        const rpChangeA = getRpChange(starDiffA, false);
+        const rpChangeB = getRpChange(starDiffB, true);
+
+        updatePlayer(playerB.id, {
+          wins: (playerB.wins ?? 0) + 1,
+          rp: Math.max(0, Math.min(100, (playerB.rp ?? 0) + rpChangeB)),
+        });
+        updatePlayer(playerA.id, {
+          losses: (playerA.losses ?? 0) + 1,
+          rp: Math.max(0, Math.min(100, (playerA.rp ?? 0) + rpChangeA)),
+        });
+      }
     }
   };
 
   const updateSessionStats = () => {
     const session = getSessionById(sessionId as string);
-    if (
-      !session ||
-      !duoA ||
-      !duoB ||
-      !teamAPlayer1 ||
-      !teamAPlayer2 ||
-      !teamBPlayer1 ||
-      !teamBPlayer2
-    )
-      return;
-    if (!isGameComplete) return;
+    if (gameType === "doubles") {
+      if (
+        !session ||
+        !duoA ||
+        !duoB ||
+        !teamAPlayer1 ||
+        !teamAPlayer2 ||
+        !teamBPlayer1 ||
+        !teamBPlayer2
+      )
+        return;
+      if (!isGameComplete) return;
 
-    // Prepare updated stats
-    const gamesPlayedPerPlayer = {
-      ...session.gamesPlayedPerPlayer,
-      [teamAPlayer1.id]:
-        (session.gamesPlayedPerPlayer[teamAPlayer1.id] ?? 0) + 1,
-      [teamAPlayer2.id]:
-        (session.gamesPlayedPerPlayer[teamAPlayer2.id] ?? 0) + 1,
-      [teamBPlayer1.id]:
-        (session.gamesPlayedPerPlayer[teamBPlayer1.id] ?? 0) + 1,
-      [teamBPlayer2.id]:
-        (session.gamesPlayedPerPlayer[teamBPlayer2.id] ?? 0) + 1,
-    };
-    const gamesPlayedPerDuo = {
-      ...session.gamesPlayedPerDuo,
-      [duoA.id]: (session.gamesPlayedPerDuo[duoA.id] ?? 0) + 1,
-      [duoB.id]: (session.gamesPlayedPerDuo[duoB.id] ?? 0) + 1,
-    };
+      // Prepare updated stats
+      const gamesPlayedPerPlayer = {
+        ...session.gamesPlayedPerPlayer,
+        [teamAPlayer1.id]:
+          (session.gamesPlayedPerPlayer[teamAPlayer1.id] ?? 0) + 1,
+        [teamAPlayer2.id]:
+          (session.gamesPlayedPerPlayer[teamAPlayer2.id] ?? 0) + 1,
+        [teamBPlayer1.id]:
+          (session.gamesPlayedPerPlayer[teamBPlayer1.id] ?? 0) + 1,
+        [teamBPlayer2.id]:
+          (session.gamesPlayedPerPlayer[teamBPlayer2.id] ?? 0) + 1,
+      };
+      const gamesPlayedPerDuo = {
+        ...session.gamesPlayedPerDuo,
+        [duoA.id]: (session.gamesPlayedPerDuo[duoA.id] ?? 0) + 1,
+        [duoB.id]: (session.gamesPlayedPerDuo[duoB.id] ?? 0) + 1,
+      };
 
-    let gamesWonPerPlayer = { ...session.gamesWonPerPlayer };
-    let gamesWonPerDuo = { ...session.gamesWonPerDuo };
-    let priorityPickPlayerIds: string[] = [];
+      let gamesWonPerPlayer = { ...session.gamesWonPerPlayer };
+      let gamesWonPerDuo = { ...session.gamesWonPerDuo };
 
-    if (scoreA > scoreB) {
-      gamesWonPerPlayer = {
-        ...gamesWonPerPlayer,
-        [teamAPlayer1.id]: (gamesWonPerPlayer[teamAPlayer1.id] ?? 0) + 1,
-        [teamAPlayer2.id]: (gamesWonPerPlayer[teamAPlayer2.id] ?? 0) + 1,
+      if (scoreA > scoreB) {
+        gamesWonPerPlayer = {
+          ...gamesWonPerPlayer,
+          [teamAPlayer1.id]: (gamesWonPerPlayer[teamAPlayer1.id] ?? 0) + 1,
+          [teamAPlayer2.id]: (gamesWonPerPlayer[teamAPlayer2.id] ?? 0) + 1,
+        };
+        gamesWonPerDuo = {
+          ...gamesWonPerDuo,
+          [duoA.id]: (gamesWonPerDuo[duoA.id] ?? 0) + 1,
+        };
+      } else if (scoreB > scoreA) {
+        gamesWonPerPlayer = {
+          ...gamesWonPerPlayer,
+          [teamBPlayer1.id]: (gamesWonPerPlayer[teamBPlayer1.id] ?? 0) + 1,
+          [teamBPlayer2.id]: (gamesWonPerPlayer[teamBPlayer2.id] ?? 0) + 1,
+        };
+        gamesWonPerDuo = {
+          ...gamesWonPerDuo,
+          [duoB.id]: (gamesWonPerDuo[duoB.id] ?? 0) + 1,
+        };
+      }
+
+      updateSession(sessionId as string, {
+        ...session,
+        gamesPlayedPerPlayer,
+        gamesPlayedPerDuo,
+        gamesWonPerPlayer,
+        gamesWonPerDuo,
+      });
+    } else if (gameType === "singles") {
+      if (!session || !playerA || !playerB) return;
+      if (!isGameComplete) return;
+
+      const gamesPlayedPerPlayer = {
+        ...session.gamesPlayedPerPlayer,
+        [playerA.id]: (session.gamesPlayedPerPlayer[playerA.id] ?? 0) + 1,
+        [playerB.id]: (session.gamesPlayedPerPlayer[playerB.id] ?? 0) + 1,
       };
-      gamesWonPerDuo = {
-        ...gamesWonPerDuo,
-        [duoA.id]: (gamesWonPerDuo[duoA.id] ?? 0) + 1,
+
+      const gamesWonPerPlayer = {
+        ...session.gamesWonPerPlayer,
+        [playerA.id]:
+          (session.gamesWonPerPlayer[playerA.id] ?? 0) +
+          (scoreA > scoreB ? 1 : 0),
+        [playerB.id]:
+          (session.gamesWonPerPlayer[playerB.id] ?? 0) +
+          (scoreB > scoreA ? 1 : 0),
       };
-      const newPicks = [teamAPlayer1.id, teamAPlayer2.id].filter(
-        (id) => !(session.priorityPickPlayerIds ?? []).includes(id)
-      );
-      priorityPickPlayerIds = newPicks;
-    } else if (scoreB > scoreA) {
-      gamesWonPerPlayer = {
-        ...gamesWonPerPlayer,
-        [teamBPlayer1.id]: (gamesWonPerPlayer[teamBPlayer1.id] ?? 0) + 1,
-        [teamBPlayer2.id]: (gamesWonPerPlayer[teamBPlayer2.id] ?? 0) + 1,
-      };
-      gamesWonPerDuo = {
-        ...gamesWonPerDuo,
-        [duoB.id]: (gamesWonPerDuo[duoB.id] ?? 0) + 1,
-      };
-      const newPicks = [teamBPlayer1.id, teamBPlayer2.id].filter(
-        (id) => !(session.priorityPickPlayerIds ?? []).includes(id)
-      );
-      priorityPickPlayerIds = newPicks;
+
+      updateSession(sessionId as string, {
+        ...session,
+        gamesPlayedPerPlayer,
+        gamesWonPerPlayer,
+      });
     }
-
-    updateSession(sessionId as string, {
-      ...session,
-      gamesPlayedPerPlayer,
-      gamesPlayedPerDuo,
-      gamesWonPerPlayer,
-      gamesWonPerDuo,
-      priorityPickPlayerIds,
-    });
   };
 
   const handleUndo = () => {
@@ -385,12 +492,36 @@ export default function GameScreen() {
 
     let isTeamASwapped = game.isTeamASwapped;
     let isTeamBSwapped = game.isTeamBSwapped;
-    const servingTeamBeforeMove = secondLast ?? game.initialServer ?? "A";
-    if (last === "A" && servingTeamBeforeMove === "A") {
-      isTeamASwapped = !isTeamASwapped;
-    }
-    if (last === "B" && servingTeamBeforeMove === "B") {
-      isTeamBSwapped = !isTeamBSwapped;
+
+    if (gameType === "doubles") {
+      // Existing logic for doubles
+      const servingTeamBeforeMove = secondLast ?? game.initialServer ?? "A";
+      if (last === "A" && servingTeamBeforeMove === "A") {
+        isTeamASwapped = !isTeamASwapped;
+      }
+      if (last === "B" && servingTeamBeforeMove === "B") {
+        isTeamBSwapped = !isTeamBSwapped;
+      }
+    } else {
+      // Singles logic
+      const scoreA = newTeamA.score;
+      const scoreB = newTeamB.score;
+      const serverIndex =
+        (newServer === "A" ? scoreA : scoreB) % 2 === 0 ? 0 : 1;
+      const notServingScore = newServer === "A" ? scoreB : scoreA;
+      const notServerIndex = notServingScore % 2 === 0 ? 0 : 1;
+
+      // If the undone point was scored by the non-server, swap only if serverIndex === notServerIndex
+      if (last !== newServer) {
+        if (serverIndex === notServerIndex) {
+          isTeamASwapped = !isTeamASwapped;
+          isTeamBSwapped = !isTeamBSwapped;
+        }
+      } else {
+        // If the undone point was scored by the server, always swap
+        isTeamASwapped = !isTeamASwapped;
+        isTeamBSwapped = !isTeamBSwapped;
+      }
     }
 
     updateSession(sessionId as string, {
@@ -409,7 +540,8 @@ export default function GameScreen() {
 
   const handleRedo = () => {
     if (!game || !game.redoqueue || game.redoqueue.length === 0) return;
-    const last = game.redoqueue[game.redoqueue.length - 1];
+    const redoqueue = game.redoqueue;
+    const last = redoqueue[redoqueue.length - 1];
     let newTeamA = { ...game.teamA };
     let newTeamB = { ...game.teamB };
     if (last === "A") newTeamA.score += 1;
@@ -417,11 +549,27 @@ export default function GameScreen() {
 
     let isTeamASwapped = game.isTeamASwapped;
     let isTeamBSwapped = game.isTeamBSwapped;
-    if (last === "A" && game.server === "A") {
-      isTeamASwapped = !isTeamASwapped;
-    }
-    if (last === "B" && game.server === "B") {
-      isTeamBSwapped = !isTeamBSwapped;
+
+    if (gameType === "doubles") {
+      if (last === "A" && server === "A") {
+        isTeamASwapped = !isTeamASwapped;
+      }
+      if (last === "B" && server === "B") {
+        isTeamBSwapped = !isTeamBSwapped;
+      }
+    } else {
+      // Singles logic
+      // If the redone point is scored by the non-server, swap only if serverIndex === notServerIndex
+      if (last !== server) {
+        if (serverIndex === notServerIndex) {
+          isTeamASwapped = !isTeamASwapped;
+          isTeamBSwapped = !isTeamBSwapped;
+        }
+      } else {
+        // If the redone point is scored by the server, always swap
+        isTeamASwapped = !isTeamASwapped;
+        isTeamBSwapped = !isTeamBSwapped;
+      }
     }
 
     updateSession(sessionId as string, {
@@ -431,7 +579,7 @@ export default function GameScreen() {
         teamB: newTeamB,
         server: last,
         undoqueue: [...(game.undoqueue ?? []), last],
-        redoqueue: game.redoqueue.slice(0, -1),
+        redoqueue: redoqueue.slice(0, -1),
         isTeamASwapped,
         isTeamBSwapped,
       },
@@ -446,10 +594,16 @@ export default function GameScreen() {
     );
   }
 
-  if (!duoA || !duoB) {
+  if (gameType === "doubles" && (!duoA || !duoB)) {
     return (
       <View className="flex-1 items-center justify-center bg-app-background">
         <Text className="text-white">Team information missing.</Text>
+      </View>
+    );
+  } else if (gameType === "singles" && (!playerA || !playerB)) {
+    return (
+      <View className="flex-1 items-center justify-center bg-app-background">
+        <Text className="text-white">Player information missing.</Text>
       </View>
     );
   }
@@ -511,7 +665,15 @@ export default function GameScreen() {
         {/* Left Scoreboard */}
         <Animated.View style={[leftScoreboardStyle]} className="mr-2">
           <Scoreboard
-            teamName={isTeamSwapped ? "Team B" : "Team A"}
+            teamName={
+              isTeamSwapped
+                ? gameType === "doubles"
+                  ? "Team B"
+                  : "Player B"
+                : gameType === "doubles"
+                  ? "Team A"
+                  : "Player A"
+            }
             score={isTeamSwapped ? scoreB : scoreA}
             onScore={() => (isTeamSwapped ? handleScoreB : handleScoreA)()}
             disabled={isGameComplete}
@@ -522,20 +684,33 @@ export default function GameScreen() {
         <View className="flex-1">
           <BadmintonCourt
             sessionId={sessionId as string}
-            teamA={{
-              player1Name: teamAPlayer1?.name ?? "",
-              player2Name: teamAPlayer2?.name ?? "",
-            }}
-            teamB={{
-              player1Name: teamBPlayer1?.name ?? "",
-              player2Name: teamBPlayer2?.name ?? "",
-            }}
+            teamA={
+              gameType === "doubles"
+                ? {
+                    player1Name: teamAPlayer1?.name ?? "",
+                    player2Name: teamAPlayer2?.name ?? "",
+                  }
+                : {
+                    player2Name: playerA?.name ?? "",
+                  }
+            }
+            teamB={
+              gameType === "doubles"
+                ? {
+                    player1Name: teamBPlayer1?.name ?? "",
+                    player2Name: teamBPlayer2?.name ?? "",
+                  }
+                : {
+                    player1Name: playerB?.name ?? "",
+                  }
+            }
             server={server}
             serverIndex={serverIndex}
             gameStarted={gameStarted}
             isTeamSwapped={isTeamSwapped}
             isTeamASwapped={isTeamASwapped}
             isTeamBSwapped={isTeamBSwapped}
+            gameType={gameType}
             onSwapTeams={handleSwapTeams}
             onSwapServer={handleSwapServer}
           />
@@ -544,7 +719,15 @@ export default function GameScreen() {
         {/* Right Scoreboard */}
         <Animated.View style={[rightScoreboardStyle]} className="ml-2">
           <Scoreboard
-            teamName={isTeamSwapped ? "Team A" : "Team B"}
+            teamName={
+              isTeamSwapped
+                ? gameType === "doubles"
+                  ? "Team A"
+                  : "Player A"
+                : gameType === "doubles"
+                  ? "Team B"
+                  : "Player B"
+            }
             score={isTeamSwapped ? scoreA : scoreB}
             onScore={() => (isTeamSwapped ? handleScoreA : handleScoreB)()}
             disabled={isGameComplete}
@@ -561,8 +744,12 @@ export default function GameScreen() {
             <Text className="text-white text-lg mr-2">
               Winner:{" "}
               {scoreA > scoreB
-                ? teamAPlayer1?.name + " & " + teamAPlayer2?.name
-                : teamBPlayer1?.name + " & " + teamBPlayer2?.name}
+                ? gameType === "doubles"
+                  ? teamAPlayer1?.name + " & " + teamAPlayer2?.name
+                  : playerA?.name
+                : gameType === "doubles"
+                  ? teamBPlayer1?.name + " & " + teamBPlayer2?.name
+                  : playerB?.name}
             </Text>
             <Ionicons name="trophy" size={15} color="#F59E0B" />
           </View>

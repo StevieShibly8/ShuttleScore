@@ -11,7 +11,6 @@ export interface Session {
   gamesPlayedPerDuo: Record<string, number>;
   gamesWonPerPlayer: Record<string, number>;
   gamesWonPerDuo: Record<string, number>;
-  priorityPickPlayerIds: string[];
   isSessionActive: boolean;
   sessionDuration: number;
   miscCosts: { label: string; amount: number }[];

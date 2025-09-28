@@ -72,7 +72,9 @@ export const GameCard = ({ gameId, sessionId, isActive }: GameCardProps) => {
           {/* Team A */}
           <View style={{ flex: 1 }}>
             <Text className="text-white font-semibold text-base">
-              {getDuoNames(game.teamA.duoId)}
+              {game.gameType === "doubles"
+                ? getDuoNames(game.teamA.id) || "Unknown Duo"
+                : getPlayerById(game.teamA.id)?.name || "Unknown Player"}
             </Text>
           </View>
           {/* Score */}
@@ -109,7 +111,9 @@ export const GameCard = ({ gameId, sessionId, isActive }: GameCardProps) => {
           {/* Team B */}
           <View style={{ flex: 1, alignItems: "flex-end" }}>
             <Text className="text-white font-semibold text-base">
-              {getDuoNames(game.teamB.duoId)}
+              {game.gameType === "doubles"
+                ? getDuoNames(game.teamB.id) || "Unknown Duo"
+                : getPlayerById(game.teamB.id)?.name || "Unknown Player"}
             </Text>
           </View>
         </View>

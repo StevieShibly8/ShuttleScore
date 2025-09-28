@@ -1,5 +1,5 @@
 export interface Team {
-  duoId: string;
+  id: string; // playerId for singles, duoId for doubles
   score: number;
 }
 
@@ -17,4 +17,5 @@ export interface Game {
   redoqueue: ("A" | "B")[];
   gamePoint: number;
   pointCap: number;
+  gameType: string; // "singles" or "doubles"
 }

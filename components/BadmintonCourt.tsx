@@ -11,14 +11,15 @@ import SwapButton from "./SwapButton";
 
 interface BadmintonCourtProps {
   sessionId: string;
-  teamA: { player1Name: string; player2Name: string };
-  teamB: { player1Name: string; player2Name: string };
+  teamA: { player1Name?: string; player2Name: string };
+  teamB: { player1Name: string; player2Name?: string };
   server: "A" | "B";
   serverIndex: number;
   gameStarted: boolean;
   isTeamSwapped: boolean;
   isTeamASwapped: boolean;
   isTeamBSwapped: boolean;
+  gameType: string;
   onSwapTeams: () => void;
   onSwapServer: () => void;
 }
@@ -33,6 +34,7 @@ export const BadmintonCourt = ({
   isTeamSwapped,
   isTeamASwapped,
   isTeamBSwapped,
+  gameType,
   onSwapTeams,
   onSwapServer,
 }: BadmintonCourtProps) => {
@@ -48,9 +50,17 @@ export const BadmintonCourt = ({
         250,
         !isTeamASwapped
       );
+      if (gameType !== "doubles") {
+        animateVerticalSwap(
+          teamBPlayer1TranslateY,
+          teamBPlayer2TranslateY,
+          250,
+          !isTeamBSwapped
+        );
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isTeamASwapped, server]);
+  }, [isTeamASwapped, isTeamBSwapped, server]);
 
   useEffect(() => {
     if (server === "B") {
@@ -61,8 +71,16 @@ export const BadmintonCourt = ({
         !isTeamBSwapped
       );
     }
+    if (gameType !== "doubles") {
+      animateVerticalSwap(
+        teamAPlayer1TranslateY,
+        teamAPlayer2TranslateY,
+        250,
+        !isTeamASwapped
+      );
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isTeamBSwapped, server]);
+  }, [isTeamASwapped, isTeamBSwapped, server]);
 
   useEffect(() => {
     const { x, y } = getShuttlecockTargetPosition(server, serverIndex);
@@ -206,6 +224,55 @@ export const BadmintonCourt = ({
     }
   };
 
+  const animateDiagonalSwap = (
+    teamAplayer1TranslateX: typeof teamAPlayer1TranslateX,
+    teamAplayer1TranslateY: typeof teamAPlayer1TranslateY,
+    teamAplayer2TranslateX: typeof teamAPlayer2TranslateX,
+    teamAplayer2TranslateY: typeof teamAPlayer2TranslateY,
+    teamBplayer1TranslateX: typeof teamBPlayer1TranslateX,
+    teamBplayer1TranslateY: typeof teamBPlayer1TranslateY,
+    teamBplayer2TranslateX: typeof teamBPlayer2TranslateX,
+    teamBplayer2TranslateY: typeof teamBPlayer2TranslateY,
+    animationTime: number,
+    swapped: boolean
+  ) => {
+    if (swapped) {
+      teamAplayer1TranslateX.value = withTiming(0, { duration: animationTime });
+      teamAplayer1TranslateY.value = withTiming(0, { duration: animationTime });
+      teamAplayer2TranslateX.value = withTiming(0, { duration: animationTime });
+      teamAplayer2TranslateY.value = withTiming(0, { duration: animationTime });
+      teamBplayer1TranslateX.value = withTiming(0, { duration: animationTime });
+      teamBplayer1TranslateY.value = withTiming(0, { duration: animationTime });
+      teamBplayer2TranslateX.value = withTiming(0, { duration: animationTime });
+      teamBplayer2TranslateY.value = withTiming(0, { duration: animationTime });
+    } else {
+      teamAplayer1TranslateX.value = withTiming(310, {
+        duration: animationTime,
+      });
+      teamAplayer1TranslateY.value = withTiming(115, {
+        duration: animationTime,
+      });
+      teamAplayer2TranslateX.value = withTiming(310, {
+        duration: animationTime,
+      });
+      teamAplayer2TranslateY.value = withTiming(-115, {
+        duration: animationTime,
+      });
+      teamBplayer1TranslateX.value = withTiming(-310, {
+        duration: animationTime,
+      });
+      teamBplayer1TranslateY.value = withTiming(115, {
+        duration: animationTime,
+      });
+      teamBplayer2TranslateX.value = withTiming(-310, {
+        duration: animationTime,
+      });
+      teamBplayer2TranslateY.value = withTiming(-115, {
+        duration: animationTime,
+      });
+    }
+  };
+
   // Swap functions with slide animations
   const handleSwapTeamA = () => {
     if (!currentGame) return;
@@ -225,7 +292,6 @@ export const BadmintonCourt = ({
 
   const handleSwapTeamB = () => {
     if (!currentGame) return;
-
     animateVerticalSwap(
       teamBPlayer1TranslateY,
       teamBPlayer2TranslateY,
@@ -240,12 +306,31 @@ export const BadmintonCourt = ({
     });
   };
 
-  const handleSwapTeams = () => {
+  const handleSwapDoubles = () => {
+    if (!currentGame) return;
     animateHorizontalSwap(
       teamAPlayer1TranslateX,
       teamAPlayer2TranslateX,
       teamBPlayer1TranslateX,
       teamBPlayer2TranslateX,
+      500,
+      isTeamSwapped
+    );
+    onSwapTeams();
+  };
+
+  const handleSwapSingles = () => {
+    if (!currentGame) return;
+    console.log("Swapping singles");
+    animateDiagonalSwap(
+      teamAPlayer1TranslateX,
+      teamAPlayer1TranslateY,
+      teamAPlayer2TranslateX,
+      teamAPlayer2TranslateY,
+      teamBPlayer1TranslateX,
+      teamBPlayer1TranslateY,
+      teamBPlayer2TranslateX,
+      teamBPlayer2TranslateY,
       500,
       isTeamSwapped
     );
@@ -307,25 +392,39 @@ export const BadmintonCourt = ({
           {/* Swap Buttons */}
           {!gameStarted && (
             <>
-              {/* Left Side Player Swap Button */}
-              <View className="absolute left-8 top-1/2 -translate-y-1/2 z-10">
-                <SwapButton
-                  direction="vertical"
-                  onPress={isTeamSwapped ? handleSwapTeamB : handleSwapTeamA}
-                />
-              </View>
+              {gameType === "doubles" && (
+                <>
+                  {/* Left Side Player Swap Button */}
+                  <View className="absolute left-8 top-1/2 -translate-y-1/2 z-10">
+                    <SwapButton
+                      direction="vertical"
+                      onPress={
+                        isTeamSwapped ? handleSwapTeamB : handleSwapTeamA
+                      }
+                    />
+                  </View>
 
-              {/* Right Side Player Swap Button */}
-              <View className="absolute right-8 top-1/2 -translate-y-1/2 z-10">
-                <SwapButton
-                  direction="vertical"
-                  onPress={isTeamSwapped ? handleSwapTeamA : handleSwapTeamB}
-                />
-              </View>
-
+                  {/* Right Side Player Swap Button */}
+                  <View className="absolute right-8 top-1/2 -translate-y-1/2 z-10">
+                    <SwapButton
+                      direction="vertical"
+                      onPress={
+                        isTeamSwapped ? handleSwapTeamA : handleSwapTeamB
+                      }
+                    />
+                  </View>
+                </>
+              )}
               {/* Center Team Swap Button */}
               <View className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
-                <SwapButton direction="horizontal" onPress={handleSwapTeams} />
+                <SwapButton
+                  direction="horizontal"
+                  onPress={
+                    gameType === "doubles"
+                      ? handleSwapDoubles
+                      : handleSwapSingles
+                  }
+                />
               </View>
 
               {/* Swap Server Button */}
@@ -405,18 +504,21 @@ export const BadmintonCourt = ({
               className="flex-1 mr-40 items-center justify-center"
               style={[teamAPlayer1Style]}
             >
-              <View style={{ flexDirection: "row", alignItems: "center" }}>
-                <MaterialCommunityIcons
-                  name="account-circle"
-                  size={22}
-                  color="#fff"
-                  style={{ marginRight: 8 }}
-                />
-                <Text className="text-white text-lg font-semibold">
-                  {teamA.player1Name}
-                </Text>
-              </View>
+              {gameType === "doubles" && (
+                <View style={{ flexDirection: "row", alignItems: "center" }}>
+                  <MaterialCommunityIcons
+                    name="account-circle"
+                    size={22}
+                    color="#fff"
+                    style={{ marginRight: 8 }}
+                  />
+                  <Text className="text-white text-lg font-semibold">
+                    {teamA.player1Name}
+                  </Text>
+                </View>
+              )}
             </Animated.View>
+
             <Animated.View
               className="flex-1 items-center justify-center"
               style={[teamBPlayer1Style]}
@@ -458,17 +560,19 @@ export const BadmintonCourt = ({
               className="flex-1 items-center justify-center"
               style={[teamBPlayer2Style]}
             >
-              <View style={{ flexDirection: "row", alignItems: "center" }}>
-                <MaterialCommunityIcons
-                  name="account-circle"
-                  size={22}
-                  color="#fff"
-                  style={{ marginRight: 8 }}
-                />
-                <Text className="text-white text-lg font-semibold">
-                  {teamB.player2Name}
-                </Text>
-              </View>
+              {gameType === "doubles" && (
+                <View style={{ flexDirection: "row", alignItems: "center" }}>
+                  <MaterialCommunityIcons
+                    name="account-circle"
+                    size={22}
+                    color="#fff"
+                    style={{ marginRight: 8 }}
+                  />
+                  <Text className="text-white text-lg font-semibold">
+                    {teamB.player2Name}
+                  </Text>
+                </View>
+              )}
             </Animated.View>
           </View>
         </View>

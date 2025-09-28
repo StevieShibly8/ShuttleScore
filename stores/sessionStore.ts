@@ -21,7 +21,8 @@ interface SessionStore {
     teamA: Team,
     teamB: Team,
     gamePoint: number,
-    pointCap: number
+    pointCap: number,
+    gameType: string
   ) => Game;
   getGameById: (sessionId: string, gameId: string) => Game | undefined;
   getCurrentGame: (sessionId: string) => Game | undefined;
@@ -75,7 +76,6 @@ const sessionStoreCreator: StateCreator<SessionStore> = (set, get) => ({
       gamesPlayedPerDuo,
       gamesWonPerPlayer,
       gamesWonPerDuo,
-      priorityPickPlayerIds: [],
       isSessionActive: true,
       sessionDuration,
       miscCosts: [],
@@ -104,7 +104,8 @@ const sessionStoreCreator: StateCreator<SessionStore> = (set, get) => ({
     teamA: Team,
     teamB: Team,
     gamePoint: number,
-    pointCap: number
+    pointCap: number,
+    gameType: string
   ) => {
     const newGame: Game = {
       id: uuid.v4() as string,
@@ -120,6 +121,7 @@ const sessionStoreCreator: StateCreator<SessionStore> = (set, get) => ({
       redoqueue: [],
       gamePoint,
       pointCap,
+      gameType,
     };
     get().updateSession(sessionId, { currentGame: newGame });
     return newGame;

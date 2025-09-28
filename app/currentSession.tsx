@@ -70,11 +70,22 @@ export default function CurrentSessionScreen() {
     gamePoint: number,
     pointCap: number
   ) => {
-    const duoA: Duo = getExistingDuo(teamAplayerIds);
-    const duoB: Duo = getExistingDuo(teamBplayerIds);
+    let teamAObj: Team;
+    let teamBObj: Team;
+    let gameType: string;
 
-    const teamAObj: Team = { duoId: duoA.id, score: 0 };
-    const teamBObj: Team = { duoId: duoB.id, score: 0 };
+    if (teamAplayerIds.length === 2 && teamBplayerIds.length === 2) {
+      const duoA: Duo = getExistingDuo(teamAplayerIds);
+      const duoB: Duo = getExistingDuo(teamBplayerIds);
+
+      teamAObj = { id: duoA.id, score: 0 };
+      teamBObj = { id: duoB.id, score: 0 };
+      gameType = "doubles";
+    } else {
+      teamAObj = { id: teamAplayerIds[0], score: 0 };
+      teamBObj = { id: teamBplayerIds[0], score: 0 };
+      gameType = "singles";
+    }
 
     setModalVisible(false);
     addGameToSession(
@@ -82,7 +93,8 @@ export default function CurrentSessionScreen() {
       teamAObj,
       teamBObj,
       gamePoint,
-      pointCap
+      pointCap,
+      gameType
     );
 
     router.push({
